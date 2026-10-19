@@ -1,0 +1,18 @@
+# Depoda metin dosyaları her zaman LF kalsın: gradlew ve .sh dosyaları CI'da (Linux)
+# CRLF ile bozulmasın. Windows'ta çalışan .bat/.cmd dosyaları CRLF kalır.
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# İkili dosyalar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.jks binary
+*.keystore binary
+*.apk binary
+*.aab binary
+*.jar binary
+*.hprof binary

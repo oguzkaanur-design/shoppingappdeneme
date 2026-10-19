@@ -1,0 +1,36 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local config (machine specific)
+local.properties
+
+# Signing (asla paylaşma)
+keystore.properties
+keystore/
+*.jks
+*.keystore
+
+# CI secret hazırlığı (base64 imza anahtarı - asla commit etme)
+keystore-base64.txt
+
+# Yerel ajan/IDE ayarları (makineye özel)
+.claude/settings.local.json
+
+# Artifacts and dumps
+*.apk
+*.aab
+*.hprof
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

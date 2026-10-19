@@ -1,0 +1,119 @@
+name: Android Release APK
+
+# Telefondan APK almanın en kolay yolu:
+#   Actions -> Android Release APK -> Run workflow  (veya  v*  etiketi push et)
+# İmzalı release APK, çalışma çıktısına (artifact) ve verilen etikete Release olarak eklenir.
+on:
+  workflow_dispatch:
+    inputs:
+      versionCode:
+        description: "versionCode (boş = app/build.gradle.kts değeri). Telefonda güncelleme için ARTIR."
+        required: false
+        type: string
+      versionName:
+        description: "versionName (örn. 1.3)"
+        required: false
+        type: string
+      releaseTag:
+        description: "Release etiketi (örn. v1.3). Boş bırakılırsa sadece artifact üretilir."
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build signed release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install platform and build-tools
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+      # İmza anahtarı repoya girmez; GitHub Secrets'tan geri yazılır.
+      # Gerekli secret'lar: KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KEYSTORE_BASE64 secret'ı tanımlı değil. İmzasız APK telefona güncelleme olarak kurulamaz."
+            echo "Yerelde 'bash scripts/keystore-secret-olustur.sh' çalıştırıp üretilen dosyayı"
+            echo "GitHub -> Settings -> Secrets and variables -> Actions bölümüne ekleyin."
+            exit 1
+          fi
+          mkdir -p keystore
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > keystore/shoppingapp-release.jks
+
+      - name: Write keystore.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          {
+            echo "storeFile=keystore/shoppingapp-release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore.properties
+          chmod 600 keystore.properties
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build release APK
+        run: |
+          ARGS=()
+          if [ -n "${{ inputs.versionCode }}" ]; then ARGS+=("-PversionCode=${{ inputs.versionCode }}"); fi
+          if [ -n "${{ inputs.versionName }}" ]; then ARGS+=("-PversionName=${{ inputs.versionName }}"); fi
+          ./gradlew :app:assembleRelease --no-daemon --console=plain "${ARGS[@]}"
+
+      - name: Verify the APK is signed
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -f "$APK" || { echo "::error::APK üretilmedi"; exit 1; }
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$APK"
+
+      - name: Rename APK for download
+        id: apk
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          META=app/build/outputs/apk/release/output-metadata.json
+          VERSION=$(python3 -c "import json;e=json.load(open('$META'))['elements'][0];print(f\"{e['versionName']}-v{e['versionCode']}\")")
+          NAME="shoppingapp-$VERSION.apk"
+          cp "$APK" "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shoppingapp-release-apk
+          path: ${{ steps.apk.outputs.name }}
+          if-no-files-found: error
+
+      - name: Publish Release (telefondan tek dokunuşla indirme)
+        if: ${{ inputs.releaseTag != '' || startsWith(github.ref, 'refs/tags/v') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.releaseTag || github.ref_name }}
+          name: ${{ inputs.releaseTag || github.ref_name }}
+          files: ${{ steps.apk.outputs.name }}
+          generate_release_notes: true

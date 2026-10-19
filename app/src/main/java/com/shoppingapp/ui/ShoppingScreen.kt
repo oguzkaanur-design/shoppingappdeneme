@@ -1,0 +1,800 @@
+package com.shoppingapp.ui
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.shoppingapp.R
+import com.shoppingapp.data.model.Category
+import com.shoppingapp.data.model.Store
+import com.shoppingapp.data.repository.PurchaseReceipt
+import com.shoppingapp.ui.components.AddProductSheet
+import com.shoppingapp.ui.components.ProductThumb
+import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShoppingScreen(
+    onNavigateToStats: () -> Unit,
+    onNavigateToScanner: () -> Unit,
+    viewModel: ShoppingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val receipt by viewModel.receipt.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+    var showCompleteDialog by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
+    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = "Alışveriş listesi",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "München · ${uiState.pendingItems.size} ürün alınacak",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToStats) {
+                        Icon(
+                            Icons.Default.Insights,
+                            contentDescription = "İstatistikler",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = { showAddDialog = true }) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Ürün ekle",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "Diğer",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Alışveriş verilerini sıfırla") },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.DeleteOutline, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    showResetDialog = true
+                                }
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
+        floatingActionButton = {
+            if (uiState.items.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                onClick = onNavigateToScanner,
+                icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
+                text = { Text("Barkod tara") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    StoreChip(
+                        label = "Tümü",
+                        color = MaterialTheme.colorScheme.primary,
+                        selected = uiState.selectedStoreId == null,
+                        onClick = { viewModel.selectStoreFilter(null) }
+                    )
+                }
+                items(uiState.stores, key = { it.id }) { store ->
+                    StoreChip(
+                        label = store.name,
+                        color = parseColor(store.colorHex),
+                        selected = uiState.selectedStoreId == store.id,
+                        onClick = { viewModel.selectStoreFilter(store.id) }
+                    )
+                }
+            }
+
+            SummaryCard(
+                pendingCount = uiState.pendingItems.size,
+                purchasedCount = uiState.purchasedItems.size,
+                pfandTotal = uiState.pfandTotal,
+                euroTotal = uiState.euroTotal,
+                onComplete = { showCompleteDialog = true }
+            )
+
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (uiState.items.isEmpty()) {
+                EmptyListState(onScan = onNavigateToScanner, onAdd = { showAddDialog = true })
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 130.dp)
+                ) {
+                    if (uiState.pendingItems.isNotEmpty()) {
+                        item { SectionHeader("Alınacaklar", uiState.pendingItems.size) }
+                        items(uiState.pendingItems, key = { it.listItem.id }) { item ->
+                            ShoppingItemCard(
+                                item = item,
+                                onToggle = { viewModel.togglePurchased(item.listItem) },
+                                onDelete = { viewModel.deleteItem(item.listItem) },
+                                onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) }
+                            )
+                        }
+                    }
+
+                    if (uiState.purchasedItems.isNotEmpty()) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 8.dp, top = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Alınanlar (${uiState.purchasedItems.size})",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(onClick = { viewModel.clearPurchased() }) {
+                                    Text("Temizle")
+                                }
+                            }
+                        }
+                        items(uiState.purchasedItems, key = { it.listItem.id }) { item ->
+                            ShoppingItemCard(
+                                item = item,
+                                onToggle = { viewModel.togglePurchased(item.listItem) },
+                                onDelete = { viewModel.deleteItem(item.listItem) },
+                                onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AddProductSheet(
+            stores = uiState.stores,
+            categories = uiState.categories,
+            sheetState = addSheetState,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, storeId, categoryId, qty, unit, pfand, price ->
+                viewModel.addNewItem(name, storeId, categoryId, qty, unit, pfand, price)
+                showAddDialog = false
+            }
+        )
+    }
+
+    if (showResetDialog) {
+        ResetShoppingDialog(
+            onDismiss = { showResetDialog = false },
+            onConfirm = {
+                viewModel.resetShoppingData()
+                showResetDialog = false
+            }
+        )
+    }
+
+    if (showCompleteDialog) {
+        CompletePurchaseDialog(
+            lines = uiState.pendingItems,
+            onDismiss = { showCompleteDialog = false },
+            onConfirm = { prices ->
+                viewModel.completePurchase(prices)
+                showCompleteDialog = false
+            }
+        )
+    }
+
+    receipt?.let {
+        ReceiptDialog(receipt = it, onDismiss = viewModel::dismissReceipt)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StoreChip(label: String, color: Color, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+        },
+        shape = RoundedCornerShape(12.dp),
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun SummaryCard(
+    pendingCount: Int,
+    purchasedCount: Int,
+    pfandTotal: Double,
+    euroTotal: Double,
+    onComplete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Bugünkü liste",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "$pendingCount alınacak · $purchasedCount alındı",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Sepet",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = euro(euroTotal),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Pfand ${euro(pfandTotal)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                    )
+                }
+            }
+
+            if (pendingCount > 0) {
+                Button(
+                    onClick = onComplete,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Alışverişi tamamla")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, count: Int) {
+    Text(
+        text = "$title ($count)",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+private fun EmptyListState(onScan: () -> Unit, onAdd: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_logo_mark),
+                contentDescription = null,
+                modifier = Modifier.size(48.dp)
+            )
+        }
+        Text(
+            text = "Liste henüz boş",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 20.dp)
+        )
+        Text(
+            text = "Barkod okutarak alınanlara ekle ya da elle ürün gir.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp)
+        )
+        Button(onClick = onScan, modifier = Modifier.padding(top = 20.dp)) {
+            Icon(Icons.Default.QrCodeScanner, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Barkod tara")
+        }
+        TextButton(onClick = onAdd) { Text("Elle ürün ekle") }
+    }
+}
+
+@Composable
+fun ShoppingItemCard(
+    item: UiShoppingItem,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit,
+    onQuantityChange: (Double) -> Unit
+) {
+    val isPurchased = item.listItem.isPurchased
+    val container = if (isPurchased) {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = container),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPurchased) 0.dp else 1.dp),
+        shape = RoundedCornerShape(18.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() }
+                .padding(start = 6.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = isPurchased,
+                onCheckedChange = { onToggle() }
+            )
+
+            ProductThumb(
+                product = item.product,
+                modifier = Modifier
+                    .size(58.dp)
+                    .alpha(if (isPurchased) 0.55f else 1f)
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            ) {
+                Text(
+                    text = item.product.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (isPurchased) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (isPurchased) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 6.dp)
+                ) {
+                    item.store?.let { store ->
+                        Tag(
+                            text = store.name,
+                            background = parseColor(store.colorHex),
+                            contentColor = Color.White
+                        )
+                    }
+                    if (item.product.pfandAmount > 0) {
+                        Tag(
+                            text = "Pfand ${euro(item.product.pfandAmount * item.listItem.quantity)}",
+                            background = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    QuantityButton(
+                        icon = Icons.Outlined.Remove,
+                        enabled = item.listItem.quantity > 1.0,
+                        description = "Azalt"
+                    ) { onQuantityChange(-1.0) }
+                    Text(
+                        text = "${quantity(item.listItem.quantity)} ${item.product.unit}",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 10.dp)
+                    )
+                    QuantityButton(
+                        icon = Icons.Default.Add,
+                        enabled = true,
+                        description = "Arttır"
+                    ) { onQuantityChange(1.0) }
+
+                    if (item.product.priceEuro > 0) {
+                        Text(
+                            text = euro(item.product.priceEuro * item.listItem.quantity),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 10.dp)
+                        )
+                    }
+                }
+            }
+
+            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Outlined.DeleteOutline,
+                    contentDescription = "Sil",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuantityButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    enabled: Boolean,
+    description: String,
+    onClick: () -> Unit
+) {
+    FilledTonalIconButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.size(28.dp),
+        shape = CircleShape
+    ) {
+        Icon(icon, contentDescription = description, modifier = Modifier.size(16.dp))
+    }
+}
+
+@Composable
+private fun Tag(text: String, background: Color, contentColor: Color) {
+    Surface(shape = RoundedCornerShape(6.dp), color = background) {
+        Text(
+            text = text,
+            color = contentColor,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+        )
+    }
+}
+
+@Composable
+private fun ResetShoppingDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Alışveriş verilerini sıfırla", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text("Şunlar silinir:")
+                Text("• Alınacaklar ve alınanlar listesi")
+                Text("• Alışveriş geçmişi ve istatistikler")
+                Text("• Kayıtlı ürünler ve kaydedilmiş fiyatlar")
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Market ve kategori ayarları ile Pfand kayıtları korunur.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm) { Text("Sıfırla") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Vazgeç") }
+        }
+    )
+}
+
+@Composable
+private fun CompletePurchaseDialog(
+    lines: List<UiShoppingItem>,
+    onDismiss: () -> Unit,
+    onConfirm: (Map<Long, Double>) -> Unit
+) {
+    val priceTexts = remember {
+        mutableStateMapOf<Long, String>().apply {
+            lines.forEach { entry ->
+                put(
+                    entry.listItem.id,
+                    if (entry.product.priceEuro > 0.0) amount(entry.product.priceEuro) else ""
+                )
+            }
+        }
+    }
+
+    fun priceOf(id: Long): Double =
+        priceTexts[id]?.replace(',', '.')?.toDoubleOrNull() ?: 0.0
+
+    val total = lines.sumOf { priceOf(it.listItem.id) * it.listItem.quantity }
+    val pfand = lines.sumOf { it.product.pfandAmount * it.listItem.quantity }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text("Alışverişi tamamla", fontWeight = FontWeight.Bold)
+                Text(
+                    "${lines.size} kalem · birim fiyatları kontrol et",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        text = {
+            Column {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 340.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(lines, key = { it.listItem.id }) { entry ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ProductThumb(
+                                product = entry.product,
+                                modifier = Modifier.size(42.dp),
+                                cornerRadius = 10.dp
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 10.dp)
+                            ) {
+                                Text(
+                                    text = entry.product.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "${quantity(entry.listItem.quantity)} ${entry.product.unit}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            OutlinedTextField(
+                                value = priceTexts[entry.listItem.id].orEmpty(),
+                                onValueChange = { value ->
+                                    priceTexts[entry.listItem.id] = value.filter {
+                                        it.isDigit() || it == ',' || it == '.'
+                                    }
+                                },
+                                placeholder = { Text("0,00") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.width(104.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Toplam", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        euro(total),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Pfand",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        euro(pfand),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    "Tamamlayınca liste temizlenir ve harcama geçmişe işlenir.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = total > 0.0,
+                onClick = {
+                    onConfirm(lines.associate { it.listItem.id to priceOf(it.listItem.id) })
+                }
+            ) {
+                Text("Alışverişi tamamla")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Vazgeç") }
+        }
+    )
+}
+
+@Composable
+private fun ReceiptDialog(receipt: PurchaseReceipt, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Alışveriş kaydedildi", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "${receipt.itemCount} ürün · ${receipt.storeName}",
+                        modifier = Modifier.padding(start = 10.dp)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Toplam")
+                    Text(euro(receipt.total), fontWeight = FontWeight.Bold)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Pfand", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(euro(receipt.pfand), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Text(
+                    "Harcama istatistiklere işlendi.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) { Text("Tamam") }
+        }
+    )
+}
+
+private fun parseColor(hex: String): Color =
+    runCatching { Color(android.graphics.Color.parseColor(hex)) }
+        .getOrDefault(Color(0xFF047857))
+
+private fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+
+private fun amount(value: Double): String = String.format(Locale.GERMANY, "%.2f", value)
+
+private fun quantity(value: Double): String =
+    if (value % 1.0 == 0.0) value.toInt().toString()
+    else String.format(Locale.GERMANY, "%.1f", value)

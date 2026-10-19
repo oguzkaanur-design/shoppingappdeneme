@@ -1,0 +1,1521 @@
+﻿
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\data\dao\ShoppingDao.kt
+// ==========================================
+package com.shoppingapp.data.dao
+
+import androidx.room.*
+import com.shoppingapp.data.model.*
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface ShoppingDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProduct(product: Product): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertStore(store: Store): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCategory(category: Category): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertListItem(item: ListItem): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPantryItem(item: PantryItem): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPurchaseHistory(history: PurchaseHistory): Long
+
+    @Query("SELECT * FROM products WHERE barcode = :barcode")
+    suspend fun getProductByBarcode(barcode: String): Product?
+
+    @Query("SELECT * FROM products WHERE id = :id")
+    suspend fun getProductById(id: Long): Product?
+
+    @Query("SELECT * FROM products")
+    fun getAllProducts(): Flow<List<Product>>
+
+    @Query("SELECT * FROM list_items")
+    fun getAllListItems(): Flow<List<ListItem>>
+
+    @Query("SELECT * FROM list_items WHERE isPurchased = 0")
+    fun getActiveListItemsFlow(): Flow<List<ListItem>>
+
+    @Query("SELECT * FROM stores")
+    fun getAllStores(): Flow<List<Store>>
+
+    @Query("SELECT * FROM categories")
+    fun getAllCategories(): Flow<List<Category>>
+
+    @Query("SELECT * FROM pantry_items")
+    fun getPantryItems(): Flow<List<PantryItem>>
+
+    @Query("SELECT * FROM purchase_history")
+    fun getPurchaseHistory(): Flow<List<PurchaseHistory>>
+
+    @Update
+    suspend fun updateListItem(item: ListItem)
+
+    @Delete
+    suspend fun deleteListItem(item: ListItem)
+
+    @Query("DELETE FROM list_items WHERE isPurchased = 1")
+    suspend fun clearPurchasedItems()
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\data\local\ShoppingDatabase.kt
+// ==========================================
+package com.shoppingapp.data.local
+
+import androidx.room.Database
+import androidx.room.RoomDatabase
+import com.shoppingapp.data.dao.PfandDao
+import com.shoppingapp.data.dao.ShoppingDao
+import com.shoppingapp.data.model.*
+
+@Database(
+    entities = [
+        Product::class,
+        Store::class,
+        Category::class,
+        ListItem::class,
+        PantryItem::class,
+        PurchaseHistory::class,
+        PurchaseHistoryItem::class
+    ],
+    version = 1,
+    exportSchema = false
+)
+abstract class ShoppingDatabase : RoomDatabase() {
+    abstract fun shoppingDao(): ShoppingDao
+    abstract fun pfandDao(): PfandDao
+}
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\data\model\Entities.kt
+// ==========================================
+package com.shoppingapp.data.model
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "products")
+data class Product(
+    @PrimaryKey val id: Long = 0,
+    val name: String,
+    val barcode: String,
+    val categoryId: Long,
+    val imageUrl: String? = null,
+    val unit: String,
+    val defaultStoreId: Long? = null,
+    val pfandAmount: Double = 0.0
+)
+
+@Entity(tableName = "stores")
+data class Store(
+    @PrimaryKey val id: Long = 0,
+    val name: String,
+    val colorHex: String,
+    val aisleOrderJson: String
+)
+
+@Entity(tableName = "categories")
+data class Category(
+    @PrimaryKey val id: Long = 0,
+    val nameDe: String,
+    val nameTr: String,
+    val iconName: String,
+    val colorHex: String
+)
+
+@Entity(tableName = "list_items")
+data class ListItem(
+    @PrimaryKey val id: Long = 0,
+    val productId: Long,
+    val storeId: Long,
+    val quantity: Double,
+    val isPurchased: Boolean = false,
+    val addedAt: Long
+)
+
+@Entity(tableName = "pantry_items")
+data class PantryItem(
+    @PrimaryKey val id: Long = 0,
+    val productId: Long,
+    val currentQuantity: Double,
+    val minThreshold: Double,
+    val expiryDate: Long?
+)
+
+@Entity(tableName = "purchase_history")
+data class PurchaseHistory(
+    @PrimaryKey val id: Long = 0,
+    val storeId: Long,
+    val totalAmount: Double,
+    val pfandTotal: Double,
+    val purchaseDate: Long
+)
+
+@Entity(tableName = "purchase_history_items")
+data class PurchaseHistoryItem(
+    @PrimaryKey val id: Long = 0,
+    val historyId: Long,
+    val productId: Long,
+    val priceEuro: Double,
+    val quantity: Double
+)
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\data\repository\ShoppingRepository.kt
+// ==========================================
+package com.shoppingapp.data.repository
+
+import com.shoppingapp.data.dao.ShoppingDao
+import com.shoppingapp.data.model.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import javax.inject.Inject
+import javax.inject.Singleton
+
+data class ListItemWithDetails(
+    val listItem: ListItem,
+    val product: Product?,
+    val store: Store?,
+    val category: Category?
+)
+
+@Singleton
+class ShoppingRepository @Inject constructor(
+    private val shoppingDao: ShoppingDao
+) {
+    val allListItems: Flow<List<ListItem>> = shoppingDao.getAllListItems()
+    val allProducts: Flow<List<Product>> = shoppingDao.getAllProducts()
+    val allStores: Flow<List<Store>> = shoppingDao.getAllStores()
+    val allCategories: Flow<List<Category>> = shoppingDao.getAllCategories()
+    val pantryItems: Flow<List<PantryItem>> = shoppingDao.getPantryItems()
+    val purchaseHistory: Flow<List<PurchaseHistory>> = shoppingDao.getPurchaseHistory()
+
+    suspend fun initDefaultData() {
+        val stores = shoppingDao.getAllStores().first()
+        if (stores.isEmpty()) {
+            val defaultStores = listOf(
+                Store(id = 1, name = "Rewe", colorHex = "#E2001A", aisleOrderJson = "[]"),
+                Store(id = 2, name = "Edeka", colorHex = "#005CA9", aisleOrderJson = "[]"),
+                Store(id = 3, name = "Aldi", colorHex = "#002B49", aisleOrderJson = "[]"),
+                Store(id = 4, name = "Lidl", colorHex = "#0050AA", aisleOrderJson = "[]"),
+                Store(id = 5, name = "Kaufland", colorHex = "#D00000", aisleOrderJson = "[]")
+            )
+            defaultStores.forEach { shoppingDao.insertStore(it) }
+        }
+
+        val categories = shoppingDao.getAllCategories().first()
+        if (categories.isEmpty()) {
+            val defaultCategories = listOf(
+                Category(id = 1, nameDe = "Obst & GemÃ¼se", nameTr = "Meyve & Sebze", iconName = "eco", colorHex = "#4CAF50"),
+                Category(id = 2, nameDe = "Milchprodukte", nameTr = "SÃ¼t ÃœrÃ¼nleri", iconName = "local_drink", colorHex = "#2196F3"),
+                Category(id = 3, nameDe = "GetrÃ¤nke", nameTr = "Ä°Ã§ecekler", iconName = "local_bar", colorHex = "#FF9800"),
+                Category(id = 4, nameDe = "Snacks & SÃ¼ÃŸes", nameTr = "AtÄ±ÅŸtÄ±rmalÄ±k", iconName = "cookie", colorHex = "#9C27B0"),
+                Category(id = 5, nameDe = "Haushalt", nameTr = "Temizlik & Ev", iconName = "cleaning_services", colorHex = "#607D8B")
+            )
+            defaultCategories.forEach { shoppingDao.insertCategory(it) }
+        }
+
+        val products = shoppingDao.getAllProducts().first()
+        if (products.isEmpty()) {
+            val sampleProducts = listOf(
+                Product(id = 1, name = "SÃ¼t 1.5% (Milch)", barcode = "4001234567890", categoryId = 2, unit = "L", pfandAmount = 0.0),
+                Product(id = 2, name = "Su 1.5L (Wasser Flasche)", barcode = "4009876543210", categoryId = 3, unit = "Flasche", pfandAmount = 0.25),
+                Product(id = 3, name = "Masa Suyu KasasÄ± (Bier/Wasser Kiste)", barcode = "4005555444333", categoryId = 3, unit = "Kiste", pfandAmount = 1.50),
+                Product(id = 4, name = "Elma (Ã„pfel)", barcode = "4001111222333", categoryId = 1, unit = "kg", pfandAmount = 0.0),
+                Product(id = 5, name = "Maden Suyu Cam (Sprudel Glas)", barcode = "4004444333222", categoryId = 3, unit = "Flasche", pfandAmount = 0.15)
+            )
+            sampleProducts.forEach { shoppingDao.insertProduct(it) }
+
+            // Initial sample list items
+            val sampleItems = listOf(
+                ListItem(id = 1, productId = 1, storeId = 1, quantity = 2.0, isPurchased = false, addedAt = System.currentTimeMillis()),
+                ListItem(id = 2, productId = 2, storeId = 1, quantity = 6.0, isPurchased = false, addedAt = System.currentTimeMillis()),
+                ListItem(id = 3, productId = 3, storeId = 2, quantity = 1.0, isPurchased = false, addedAt = System.currentTimeMillis()),
+                ListItem(id = 4, productId = 4, storeId = 3, quantity = 1.5, isPurchased = true, addedAt = System.currentTimeMillis())
+            )
+            sampleItems.forEach { shoppingDao.insertListItem(it) }
+
+            // Initial sample purchase history
+            shoppingDao.insertPurchaseHistory(
+                PurchaseHistory(
+                    id = 1,
+                    storeId = 1,
+                    totalAmount = 18.50,
+                    pfandTotal = 3.00,
+                    purchaseDate = System.currentTimeMillis() - 86400000
+                )
+            )
+        }
+    }
+
+    suspend fun addProduct(product: Product): Long = shoppingDao.insertProduct(product)
+
+    suspend fun addListItem(productId: Long, storeId: Long, quantity: Double): Long {
+        return shoppingDao.insertListItem(
+            ListItem(
+                productId = productId,
+                storeId = storeId,
+                quantity = quantity,
+                isPurchased = false,
+                addedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+    suspend fun updateListItem(item: ListItem) = shoppingDao.updateListItem(item)
+
+    suspend fun deleteListItem(item: ListItem) = shoppingDao.deleteListItem(item)
+
+    suspend fun clearPurchasedItems() = shoppingDao.clearPurchasedItems()
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\di\DatabaseModule.kt
+// ==========================================
+package com.shoppingapp.di
+
+import android.content.Context
+import androidx.room.Room
+import com.shoppingapp.data.dao.ShoppingDao
+import com.shoppingapp.data.local.ShoppingDatabase
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): ShoppingDatabase {
+        return Room.databaseBuilder(
+            context,
+            ShoppingDatabase::class.java,
+            "shopping_db"
+        ).fallbackToDestructiveMigration().build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideShoppingDao(database: ShoppingDatabase): ShoppingDao {
+        return database.shoppingDao()
+    }
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\feature\stats\PfandManager.kt
+// ==========================================
+package com.shoppingapp.feature.stats
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "pfand_prefs")
+
+@Singleton
+class PfandManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    companion object {
+        private val PFAND_PLASTIC = 0.25
+        private val PFAND_GLASS = 0.15
+        private val PFAND_CASE = 1.50
+    }
+
+    val pfandTotal: Flow<Double> = context.dataStore.data.map { preferences ->
+        // In a real app, this would map to the total pfand from purchase history
+        0.0
+    }
+
+    suspend fun calculatePfandForPurchase(itemCount: Int): Double {
+        // Simulate calculation
+        return itemCount * PFAND_PLASTIC
+    }
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\feature\stats\StatsViewModel.kt
+// ==========================================
+package com.shoppingapp.feature.stats
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.shoppingapp.data.repository.ShoppingRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
+import javax.inject.Inject
+
+data class StatsUiState(
+    val totalSpending: Double = 0.0,
+    val pfandTotal: Double = 0.0,
+    val activeItemCount: Int = 0,
+    val purchasedItemCount: Int = 0
+)
+
+@HiltViewModel
+class StatsViewModel @Inject constructor(
+    private val repository: ShoppingRepository
+) : ViewModel() {
+
+    val statsState: StateFlow<StatsUiState> = combine(
+        repository.allListItems,
+        repository.allProducts,
+        repository.purchaseHistory
+    ) { items, products, history ->
+        val productMap = products.associateBy { it.id }
+
+        var currentPfand = 0.0
+        var activeCount = 0
+        var purchasedCount = 0
+
+        items.forEach { item ->
+            val product = productMap[item.productId]
+            if (product != null && product.pfandAmount > 0) {
+                currentPfand += product.pfandAmount * item.quantity
+            }
+            if (item.isPurchased) {
+                purchasedCount++
+            } else {
+                activeCount++
+            }
+        }
+
+        val historySpending = history.sumOf { it.totalAmount }
+        val historyPfand = history.sumOf { it.pfandTotal }
+
+        StatsUiState(
+            totalSpending = historySpending,
+            pfandTotal = historyPfand + currentPfand,
+            activeItemCount = activeCount,
+            purchasedItemCount = purchasedCount
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = StatsUiState()
+    )
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\ui\AppNavigation.kt
+// ==========================================
+package com.shoppingapp.ui
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Redeem
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.shoppingapp.feature.stats.StatsScreen
+import com.shoppingapp.ui.PfandScreen
+import com.shoppingapp.ui.ShoppingScreen
+
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+    val items = listOf(
+        BottomNavItem("Home", "home", Icons.Default.Home),
+        BottomNavItem("Pfand", "pfand", Icons.Default.Redeem)
+    )
+    Scaffold(
+        bottomBar = {
+            BottomNavigation {
+                items.forEach { item ->
+                    BottomNavigationItem(
+                        icon = { Icon(item.icon, contentDescription = null) },
+                        label = { Text(item.label) },
+                        selected = navController.currentBackStackEntry?.destination?.route == item.route,
+                        onClick = {
+                            if (navController.currentBackStackEntry?.destination?.route != item.route) {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.startDestinationRoute!!) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    ) {
+        NavHost(
+            navController,
+            startDestination = "home",
+            modifier = Modifier.padding(it)
+        ) {
+            composable("home") { ShoppingScreen(onNavigateToStats = { navController.navigate("stats") }) }
+            composable("stats") { StatsScreen(onNavigateBack = { navController.popBackStack() }) }
+            composable("pfand") { PfandScreen() }
+        }
+    }
+}
+
+data class BottomNavItem(val label: String, val route: String, val icon: ImageVector)
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\ui\PfandScreen.kt
+// ==========================================
+package com.shoppingapp.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
+import java.math.RoundingMode
+import kotlin.math.round
+
+@Composable
+fun PfandScreen() {
+    val viewModel: PfandViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text("Pfand Tracking", style = MaterialTheme.typography.h5)
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
+            value = state.smallCount,
+            onValueChange = { viewModel.updateSmallCount(it) },
+            label = { Text("Plastic bottles (small)") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = state.largeCount,
+            onValueChange = { viewModel.updateLargeCount(it) },
+            label = { Text("Glass bottles (large)") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = state.tinCount,
+            onValueChange = { viewModel.updateTinCount(it) },
+            label = { Text("Tin cans") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { viewModel.calculateDailyEarnings() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Calculate Daily Earnings")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Daily earnings: â‚¬${state.dailyEarnings}")
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Accumulated earnings: â‚¬${state.totalEarnings}")
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { viewModel.resetCounts() },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.error)
+        ) {
+            Text("Reset counts")
+        }
+    }
+}
+
+class PfandViewModel @Inject constructor() : ViewModel() {
+    private val _uiState = MutableStateFlow(PfandUiState())
+    val uiState: StateFlow<PfandUiState> = _uiState
+
+    fun updateSmallCount(value: String) {
+        _uiState.update { it.copy(smallCount = value) }
+    }
+
+    fun updateLargeCount(value: String) {
+        _uiState.update { it.copy(largeCount = value) }
+    }
+
+    fun updateTinCount(value: String) {
+        _uiState.update { it.copy(tinCount = value) }
+    }
+
+    fun calculateDailyEarnings() {
+        val small = _uiState.value.smallCount.toIntOrNull() ?: 0
+        val large = _uiState.value.largeCount.toIntOrNull() ?: 0
+        val tin = _uiState.value.tinCount.toIntOrNull() ?: 0
+        val daily = small * 0.15 + large * 0.25 + tin * 0.25
+        _uiState.update {
+            it.copy(
+                dailyEarnings = "${"%.2f".format(daily)}",
+                totalEarnings = "${"%.2f".format((it.totalEarnings.toDoubleOrNull() ?: 0.0) + daily}"
+            )
+        }
+    }
+
+    fun resetCounts() {
+        _uiState.update {
+            it.copy(
+                smallCount = "",
+                largeCount = "",
+                tinCount = "",
+                dailyEarnings = "0.00"
+            )
+        }
+    }
+}
+
+data class PfandUiState(
+    val smallCount: String = "",
+    val largeCount: String = "",
+    val tinCount: String = "",
+    val dailyEarnings: String = "0.00",
+    val totalEarnings: String = "0.00"
+)
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\ui\ShoppingScreen.kt
+// ==========================================
+package com.shoppingapp.ui
+
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.shoppingapp.data.model.Category
+import com.shoppingapp.data.model.Store
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ShoppingScreen(
+    onNavigateToStats: () -> Unit,
+    viewModel: ShoppingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = "AlÄ±ÅŸveriÅŸ Listesi",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.clearPurchased() }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Temizle",
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                    IconButton(onClick = onNavigateToStats) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Ä°statistikler",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                )
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showAddDialog = true },
+                icon = { Icon(Icons.Default.Add, contentDescription = "Ekle") },
+                text = { Text("ÃœrÃ¼n Ekle") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Store Filter Chips
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = uiState.selectedStoreId == null,
+                        onClick = { viewModel.selectStoreFilter(null) },
+                        label = { Text("TÃ¼mÃ¼") }
+                    )
+                }
+                items(uiState.stores) { store ->
+                    FilterChip(
+                        selected = uiState.selectedStoreId == store.id,
+                        onClick = { viewModel.selectStoreFilter(store.id) },
+                        label = { Text(store.name) },
+                        leadingIcon = {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        runCatching { Color(android.graphics.Color.parseColor(store.colorHex)) }
+                                            .getOrDefault(MaterialTheme.colorScheme.primary)
+                                    )
+                            )
+                        }
+                    )
+                }
+            }
+
+            val pendingItems = uiState.items.filter { !it.listItem.isPurchased }
+            val purchasedItems = uiState.items.filter { it.listItem.isPurchased }
+
+            if (uiState.items.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "AlÄ±ÅŸveriÅŸ listeniz boÅŸ",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                        Text(
+                            text = "Yeni Ã¼rÃ¼n eklemek iÃ§in '+' butonuna basÄ±n",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 88.dp)
+                ) {
+                    if (pendingItems.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "AlÄ±nacaklar (${pendingItems.size})",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                        items(pendingItems, key = { it.listItem.id }) { item ->
+                            ShoppingItemCard(
+                                item = item,
+                                onToggle = { viewModel.togglePurchased(item.listItem) },
+                                onDelete = { viewModel.deleteItem(item.listItem) }
+                            )
+                        }
+                    }
+
+                    if (purchasedItems.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "AlÄ±nanlar (${purchasedItems.size})",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                            )
+                        }
+                        items(purchasedItems, key = { it.listItem.id }) { item ->
+                            ShoppingItemCard(
+                                item = item,
+                                onToggle = { viewModel.togglePurchased(item.listItem) },
+                                onDelete = { viewModel.deleteItem(item.listItem) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddDialog) {
+        AddItemDialog(
+            stores = uiState.stores,
+            categories = uiState.categories,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, storeId, categoryId, qty, unit, pfand ->
+                viewModel.addNewItem(name, storeId, categoryId, qty, unit, pfand)
+                showAddDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun ShoppingItemCard(
+    item: UiShoppingItem,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val isPurchased = item.listItem.isPurchased
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPurchased)
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            else
+                MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isPurchased) 0.dp else 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = isPurchased,
+                onCheckedChange = { onToggle() }
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp)
+            ) {
+                Text(
+                    text = item.product.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    textDecoration = if (isPurchased) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (isPurchased) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    item.store?.let { store ->
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = runCatching { Color(android.graphics.Color.parseColor(store.colorHex)) }
+                                .getOrDefault(MaterialTheme.colorScheme.primaryContainer)
+                        ) {
+                            Text(
+                                text = store.name,
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    if (item.product.pfandAmount > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer
+                        ) {
+                            Text(
+                                text = "Pfand: â‚¬${"%.2f".format(item.product.pfandAmount * item.listItem.quantity)}",
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Text(
+                text = "${item.listItem.quantity} ${item.product.unit}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Sil",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddItemDialog(
+    stores: List<Store>,
+    categories: List<Category>,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, storeId: Long, categoryId: Long, qty: Double, unit: String, pfand: Double) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var selectedStoreId by remember { mutableStateOf(stores.firstOrNull()?.id ?: 1L) }
+    var selectedCategoryId by remember { mutableStateOf(categories.firstOrNull()?.id ?: 1L) }
+    var quantityText by remember { mutableStateOf("1") }
+    var unit by remember { mutableStateOf("Adet") }
+    var pfandText by remember { mutableStateOf("0.0") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Yeni ÃœrÃ¼n Ekle") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("ÃœrÃ¼n AdÄ±") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = quantityText,
+                        onValueChange = { quantityText = it },
+                        label = { Text("Miktar") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = unit,
+                        onValueChange = { unit = it },
+                        label = { Text("Birim (kg, L, Adet)") },
+                        modifier = Modifier.weight(1.2f),
+                        singleLine = true
+                    )
+                }
+
+                OutlinedTextField(
+                    value = pfandText,
+                    onValueChange = { pfandText = it },
+                    label = { Text("Pfand TutarÄ± (â‚¬)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                Text("Market SeÃ§in:", style = MaterialTheme.typography.bodySmall)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(stores) { store ->
+                        FilterChip(
+                            selected = selectedStoreId == store.id,
+                            onClick = { selectedStoreId = store.id },
+                            label = { Text(store.name) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        val qty = quantityText.toDoubleOrNull() ?: 1.0
+                        val pfand = pfandText.toDoubleOrNull() ?: 0.0
+                        onConfirm(name, selectedStoreId, selectedCategoryId, qty, unit, pfand)
+                    }
+                }
+            ) {
+                Text("Ekle")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Ä°ptal")
+            }
+        }
+    )
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\ui\ShoppingViewModel.kt
+// ==========================================
+package com.shoppingapp.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.shoppingapp.data.model.*
+import com.shoppingapp.data.repository.ShoppingRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class UiShoppingItem(
+    val listItem: ListItem,
+    val product: Product,
+    val store: Store?,
+    val category: Category?
+)
+
+data class ShoppingUiState(
+    val items: List<UiShoppingItem> = emptyList(),
+    val stores: List<Store> = emptyList(),
+    val categories: List<Category> = emptyList(),
+    val selectedStoreId: Long? = null,
+    val isLoading: Boolean = true
+)
+
+@HiltViewModel
+class ShoppingViewModel @Inject constructor(
+    private val repository: ShoppingRepository
+) : ViewModel() {
+
+    private val _selectedStoreId = MutableStateFlow<Long?>(null)
+
+    val uiState: StateFlow<ShoppingUiState> = combine(
+        repository.allListItems,
+        repository.allProducts,
+        repository.allStores,
+        repository.allCategories,
+        _selectedStoreId
+    ) { items, products, stores, categories, selectedStore ->
+        val productMap = products.associateBy { it.id }
+        val storeMap = stores.associateBy { it.id }
+        val categoryMap = categories.associateBy { it.id }
+
+        val uiItems = items.mapNotNull { item ->
+            val product = productMap[item.productId] ?: return@mapNotNull null
+            val store = storeMap[item.storeId]
+            val category = categoryMap[product.categoryId]
+            UiShoppingItem(
+                listItem = item,
+                product = product,
+                store = store,
+                category = category
+            )
+        }.filter {
+            selectedStore == null || it.listItem.storeId == selectedStore
+        }
+
+        ShoppingUiState(
+            items = uiItems,
+            stores = stores,
+            categories = categories,
+            selectedStoreId = selectedStore,
+            isLoading = false
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ShoppingUiState()
+    )
+
+    init {
+        viewModelScope.launch {
+            repository.initDefaultData()
+        }
+    }
+
+    fun selectStoreFilter(storeId: Long?) {
+        _selectedStoreId.value = storeId
+    }
+
+    fun togglePurchased(item: ListItem) {
+        viewModelScope.launch {
+            repository.updateListItem(item.copy(isPurchased = !item.isPurchased))
+        }
+    }
+
+    fun deleteItem(item: ListItem) {
+        viewModelScope.launch {
+            repository.deleteListItem(item)
+        }
+    }
+
+    fun addNewItem(
+        name: String,
+        storeId: Long,
+        categoryId: Long,
+        quantity: Double,
+        unit: String,
+        pfandAmount: Double
+    ) {
+        viewModelScope.launch {
+            val product = Product(
+                id = System.currentTimeMillis(),
+                name = name,
+                barcode = "CUSTOM_${System.currentTimeMillis()}",
+                categoryId = categoryId,
+                unit = unit,
+                defaultStoreId = storeId,
+                pfandAmount = pfandAmount
+            )
+            repository.addProduct(product)
+            repository.addListItem(productId = product.id, storeId = storeId, quantity = quantity)
+        }
+    }
+
+    fun clearPurchased() {
+        viewModelScope.launch {
+            repository.clearPurchasedItems()
+        }
+    }
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\ui\StatsScreen.kt
+// ==========================================
+package com.shoppingapp.feature.stats
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StatsScreen(
+    onNavigateBack: () -> Unit = {},
+    viewModel: StatsViewModel = hiltViewModel()
+) {
+    val statsState by viewModel.statsState.collectAsState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Ä°statistikler & Pfand", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            StatCard(
+                title = "Toplam Harcama (GeÃ§miÅŸ)",
+                value = "â‚¬${"%.2f".format(statsState.totalSpending)}",
+                subtitle = "Tamamlanan alÄ±ÅŸveriÅŸ harcamalarÄ±nÄ±z",
+                icon = Icons.Default.ShoppingCart,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            StatCard(
+                title = "Toplam Ä°ade Edilebilir Pfand",
+                value = "â‚¬${"%.2f".format(statsState.pfandTotal)}",
+                subtitle = "ÅiÅŸe & Kasa depozito iade tutarÄ±",
+                icon = Icons.Default.Refresh,
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+            )
+
+            StatCard(
+                title = "Aktif ÃœrÃ¼n SayÄ±sÄ±",
+                value = "${statsState.activeItemCount} ÃœrÃ¼n",
+                subtitle = "${statsState.purchasedItemCount} Ã¼rÃ¼n Ã¶nceden alÄ±ndÄ±",
+                icon = Icons.Default.Star,
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+    }
+}
+
+@Composable
+fun StatCard(
+    title: String,
+    value: String,
+    subtitle: String,
+    icon: ImageVector,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(48.dp)
+                    .padding(end = 16.dp),
+                tint = contentColor
+            )
+
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = contentColor.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\App.kt
+// ==========================================
+package com.shoppingapp
+
+import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+
+@HiltAndroidApp
+class App : Application()
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\java\com\shoppingapp\MainActivity.kt
+// ==========================================
+package com.shoppingapp
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import com.shoppingapp.ui.AppNavigation
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            AppNavigation()
+        }
+    }
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\res\drawable\ic_launcher.xml
+// ==========================================
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <path
+      android:fillColor="#FF6200EE"
+      android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM10,17l-5,-5 1.41,-1.41L10,14.17l7.59,-7.59L19,8l-9,9z"/>
+</vector>
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\res\values\themes.xml
+// ==========================================
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Material3.DayNight.NoActionBar" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\src\main\AndroidManifest.xml
+// ==========================================
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.shoppingapp">
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="ShoppingApp"
+        android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\app\build.gradle.kts
+// ==========================================
+// Project-level build file for Android Shopping App
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("dagger.hilt.android.plugin")
+    kotlin("kapt")
+}
+
+android {
+    namespace = "com.shoppingapp"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.shoppingapp"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+    buildFeatures {
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
+    }
+}
+
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+
+    // Jetpack Compose
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.compose.ui:ui:1.5.4")
+    implementation("androidx.compose.material3:material3:1.1.2")
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.5.4")
+    implementation("androidx.navigation:navigation-compose:2.7.5")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation(platform("androidx.compose:compose-bom:2023.10.01"))
+
+    // Hilt DI
+    implementation("com.google.dagger:hilt-android:2.48")
+    kapt("com.google.dagger:hilt-compiler:2.48")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // Room Database
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    kapt("androidx.room:room-compiler:2.6.1")
+
+    // CameraX + ML Kit
+    implementation("androidx.camera:camera-core:1.3.0")
+    implementation("androidx.camera:camera-camera2:1.3.0")
+    implementation("androidx.camera:camera-lifecycle:1.3.0")
+    implementation("androidx.camera:camera-view:1.3.0")
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    // Retrofit Network
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // Coil Image Loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\build.gradle.kts
+// ==========================================
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id("com.android.application") version "8.3.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+    id("com.google.dagger.hilt.android") version "2.48" apply false
+    kotlin("kapt") version "1.9.22" apply false
+}
+
+tasks.register("clean", Delete::class) {
+    delete(layout.buildDirectory) // buildDir yerine layout.buildDirectory kullanÄ±yoruz
+}
+
+
+// ==========================================
+// DOSYA: C:\Users\gezgi\shoppingapp\settings.gradle.kts
+// ==========================================
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "shoppingapp"
+include(":app")
