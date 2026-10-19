@@ -2,9 +2,8 @@ package com.shoppingapp.di
 
 import android.content.Context
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.shoppingapp.data.dao.ShoppingDao
+import com.shoppingapp.data.local.AppMigrations
 import com.shoppingapp.data.local.ShoppingDatabase
 import dagger.Module
 import dagger.Provides
@@ -17,41 +16,29 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    /** v3 only adds the Pfand ledger; existing shopping data stays untouched. */
-    private val MIGRATION_2_3 = object : Migration(2, 3) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL(
-                "CREATE TABLE IF NOT EXISTS `pfand_entries` (" +
-                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
-                    "`label` TEXT NOT NULL, " +
-                    "`unitAmount` REAL NOT NULL, " +
-                    "`quantity` INTEGER NOT NULL, " +
-                    "`createdAt` INTEGER NOT NULL, " +
-                    "`isReturned` INTEGER NOT NULL)"
-            )
-        }
-    }
+    const val DATABASE_NAME = "shopping_db"
 
-    /** v4 adds the unit price used by the checkout total. */
-    private val MIGRATION_3_4 = object : Migration(3, 4) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL(
-                "ALTER TABLE `products` ADD COLUMN `priceEuro` REAL NOT NULL DEFAULT 0"
-            )
-        }
+    /**
+     * Veritabanının tek yapılandırma noktası; testler de aynı fonksiyonu çağırır
+     * (geçiş testleri üretim yapılandırmasını doğrulasın diye).
+     *
+     * `fallbackToDestructiveMigration()` bilinçli olarak YOK: geçişi yazılmamış bir şema
+     * değişimi kullanıcı verisini silmek yerine açıkça hata vermeli. Yeni geçiş için
+     * [AppMigrations]'a migration ekle.
+     */
+    fun buildDatabase(
+        context: Context,
+        name: String = DATABASE_NAME
+    ): ShoppingDatabase {
+        return Room.databaseBuilder(context, ShoppingDatabase::class.java, name)
+            .addMigrations(*AppMigrations.ALL)
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): ShoppingDatabase {
-        return Room.databaseBuilder(
-            context,
-            ShoppingDatabase::class.java,
-            "shopping_db"
-        )
-            .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
-            .fallbackToDestructiveMigration()
-            .build()
+        return buildDatabase(context)
     }
 
     @Provides

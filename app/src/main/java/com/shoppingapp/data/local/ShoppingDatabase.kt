@@ -17,7 +17,8 @@ import com.shoppingapp.data.model.*
         PfandEntry::class
     ],
     version = 4,
-    exportSchema = false
+    // Şemalar app/schemas altına yazılır; geçişler bu dosyalara karşı test edilir.
+    exportSchema = true
 )
 abstract class ShoppingDatabase : RoomDatabase() {
     abstract fun shoppingDao(): ShoppingDao

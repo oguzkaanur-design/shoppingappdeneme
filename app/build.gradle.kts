@@ -8,6 +8,13 @@ plugins {
     kotlin("kapt")
 }
 
+// Room geçişlerinin doğrulanabilmesi için şemaları app/schemas altına yaz.
+kapt {
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+}
+
 // Kalıcı imza anahtarı: keystore.properties (git'e girmez) yoksa release imzasız kalır.
 // Aynı anahtar + aynı applicationId + artan versionCode = telefonda "güncelleme" (veriler korunur).
 val keystorePropsFile = rootProject.file("keystore.properties")
@@ -30,6 +37,12 @@ android {
         //   ./gradlew :app:assembleRelease -PversionCode=4 -PversionName=1.3
         versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 3
         versionName = (findProperty("versionName") as String?) ?: "1.2"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    sourceSets {
+        // MigrationTestHelper şema dosyalarını asset olarak okur.
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
     }
 
     signingConfigs {
@@ -114,5 +127,7 @@ dependencies {
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test:runner:1.5.2")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
 }

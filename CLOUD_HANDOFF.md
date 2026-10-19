@@ -46,7 +46,14 @@ Akış: APK'yı telefona indir → üzerine kur. (Yerel makinede `adb -s <ip>:<p
 
 ## Bilinen notlar
 
-- Room `fallbackToDestructiveMigration()` açık; şema değişiminde veri kaybı olabilir.
+- Room: `fallbackToDestructiveMigration()` **kaldırıldı**. Şema değiştirirken `AppMigrations`
+  içine migration ekle ve `ShoppingDatabase.version`'u artır; eksik geçiş veriyi silmez,
+  uygulama açılışta `IllegalStateException` ile durur (bilinçli: sessiz veri kaybından iyidir).
+- Şemalar `app/schemas/com.shoppingapp.data.local.ShoppingDatabase/` altında (git'e girer).
+  Yeni sürüm şemasını üretmek için sürümü artırıp `./gradlew :app:assembleDebug` çalıştır.
+- Geçiş testleri: `app/src/androidTest/java/com/shoppingapp/data/local/MigrationTest.kt`
+  (veri korunması + geçişsiz sürümün hata vermesi). Çalıştırmak için cihaz/emülatör gerekir:
+  `./gradlew :app:connectedDebugAndroidTest`.
 - Örnek/demo ürünler sadece boş veritabanına yazılıyor; temizlemek için liste ekranı ⋮ → "Alışveriş verilerini sıfırla".
 - Git: tek commit var, remote yok, çoğu dosya untracked (`git config user.name` = "Claude Sonnet 4.5"). Push için önce kimlik/hesap bağlanmalı.
 - 1.7 GB toplam boyutun ~460 MB'ı `app/build`, 16 MB'ı `screenshots` — klona/taşımaya gerekmez.
