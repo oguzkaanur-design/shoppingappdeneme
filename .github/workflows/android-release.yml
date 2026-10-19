@@ -28,24 +28,46 @@ permissions:
 jobs:
   release:
     name: Build signed release APK
-    runs-on: ubuntu-latest
+    # Sabit sürüm: "ubuntu-latest" etiketi Ubuntu 26'ya geçiyor, bu da SDK düzenini değiştirebilir.
+    runs-on: ubuntu-24.04
+    env:
+      ANDROID_COMPILE_SDK: "34"
+      ANDROID_BUILD_TOOLS: "34.0.0"
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
           cache: gradle
 
+      # SDK'yı runner imajının önceden kurduğu sürüme bırakmıyoruz: CLOUD_HANDOFF.md'deki
+      # formülün aynısını kullanıp cmdline-tools'u kendimiz indiriyoruz (tekrarlanabilir).
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          set -euo pipefail
+          SDK="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$SDK/cmdline-tools"
+          cd "$SDK/cmdline-tools"
+          curl -fsSL --retry 3 -o cmdline-tools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q cmdline-tools.zip
+          mv cmdline-tools latest
+          rm cmdline-tools.zip
 
-      - name: Install platform and build-tools
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-$ANDROID_COMPILE_SDK" \
+            "build-tools;$ANDROID_BUILD_TOOLS"
 
       # İmza anahtarı repoya girmez; GitHub Secrets'tan geri yazılır.
       # Gerekli secret'lar: KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
@@ -53,6 +75,7 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
+          set -euo pipefail
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "::error::KEYSTORE_BASE64 secret'ı tanımlı değil. İmzasız APK telefona güncelleme olarak kurulamaz."
             echo "Yerelde 'bash scripts/keystore-secret-olustur.sh' çalıştırıp üretilen dosyayı"
@@ -68,6 +91,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          set -euo pipefail
           {
             echo "storeFile=keystore/shoppingapp-release.jks"
             echo "storePassword=$KEYSTORE_PASSWORD"
@@ -81,20 +105,23 @@ jobs:
 
       - name: Build release APK
         run: |
+          set -euo pipefail
           ARGS=()
           if [ -n "${{ inputs.versionCode }}" ]; then ARGS+=("-PversionCode=${{ inputs.versionCode }}"); fi
           if [ -n "${{ inputs.versionName }}" ]; then ARGS+=("-PversionName=${{ inputs.versionName }}"); fi
-          ./gradlew :app:assembleRelease --no-daemon --console=plain "${ARGS[@]}"
+          ./gradlew :app:assembleRelease --no-daemon --console=plain ${ARGS[@]+"${ARGS[@]}"}
 
       - name: Verify the APK is signed
         run: |
+          set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           test -f "$APK" || { echo "::error::APK üretilmedi"; exit 1; }
-          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS/apksigner" verify --print-certs "$APK"
 
       - name: Rename APK for download
         id: apk
         run: |
+          set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
           META=app/build/outputs/apk/release/output-metadata.json
           VERSION=$(python3 -c "import json;e=json.load(open('$META'))['elements'][0];print(f\"{e['versionName']}-v{e['versionCode']}\")")
