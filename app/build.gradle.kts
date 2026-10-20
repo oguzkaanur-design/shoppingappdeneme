@@ -34,9 +34,9 @@ android {
         targetSdk = 34
         // Her yeni sürümde versionCode'u ARTIR (telefon "güncelleme" olarak algılar, veriler kalır).
         // CI / telefondan tetiklenen derlemelerde kod düzenlemeden üzerine yazılabilir:
-        //   ./gradlew :app:assembleRelease -PversionCode=4 -PversionName=1.3
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 5
-        versionName = (findProperty("versionName") as String?) ?: "1.4"
+        //   ./gradlew :app:assembleRelease -PversionCode=6 -PversionName=1.5
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 6
+        versionName = (findProperty("versionName") as String?) ?: "1.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
