@@ -299,8 +299,8 @@ private fun SummaryCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -308,7 +308,7 @@ private fun SummaryCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 16.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -349,7 +349,7 @@ private fun SummaryCard(
                     onClick = onComplete,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp)
+                        .padding(top = 6.dp)
                 ) {
                     Icon(
                         Icons.Default.CheckCircle,
@@ -434,16 +434,16 @@ fun ShoppingItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 2.dp),
         colors = CardDefaults.cardColors(containerColor = container),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isPurchased) 0.dp else 1.dp),
-        shape = RoundedCornerShape(18.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onToggle() }
-                .padding(start = 6.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                .padding(start = 4.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
@@ -454,14 +454,14 @@ fun ShoppingItemCard(
             ProductThumb(
                 product = item.product,
                 modifier = Modifier
-                    .size(58.dp)
+                    .size(46.dp)
                     .alpha(if (isPurchased) 0.55f else 1f)
             )
 
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 12.dp)
+                    .padding(start = 8.dp)
             ) {
                 Text(
                     text = item.product.name,
@@ -480,7 +480,7 @@ fun ShoppingItemCard(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 6.dp)
+                    modifier = Modifier.padding(top = 3.dp)
                 ) {
                     item.store?.let { store ->
                         Tag(
@@ -512,7 +512,7 @@ fun ShoppingItemCard(
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 10.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp)
                     )
                     QuantityButton(
                         icon = Icons.Default.Add,
@@ -553,7 +553,7 @@ private fun QuantityButton(
     FilledTonalIconButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.size(28.dp),
+        modifier = Modifier.size(26.dp),
         shape = CircleShape
     ) {
         Icon(icon, contentDescription = description, modifier = Modifier.size(16.dp))

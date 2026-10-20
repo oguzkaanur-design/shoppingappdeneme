@@ -13,15 +13,17 @@ import java.util.Locale
  */
 object BrandCatalog {
 
-    enum class BrandSlot { DAIRY, WATER, JUICE, BEER, BAKERY, COFFEE, SNACKS, HOUSEHOLD, COSMETICS, PASTA }
+    enum class BrandSlot { DAIRY, WATER, JUICE, BEER, BAKERY, COFFEE, SNACKS, HOUSEHOLD, COSMETICS, EGGS }
 
     private val storeBrands: Map<Long, Map<BrandSlot, String>> = mapOf(
         1L to mapOf( // Rewe
             BrandSlot.DAIRY to "ja!",
-            BrandSlot.BAKERY to "ja!"
+            BrandSlot.BAKERY to "ja!",
+            BrandSlot.EGGS to "ja!"
         ),
         2L to mapOf( // Edeka
-            BrandSlot.DAIRY to "GUT&GÜNSTIG"
+            BrandSlot.DAIRY to "GUT&GÜNSTIG",
+            BrandSlot.EGGS to "GUT&GÜNSTIG"
         ),
         3L to mapOf( // Aldi Süd
             BrandSlot.DAIRY to "MILSANI",
@@ -58,8 +60,43 @@ object BrandCatalog {
 
     /** Doğrulanmış, markete özel ek ürün adları. */
     private val storeSpecials: Map<Long, Map<String, List<String>>> = mapOf(
+        1L to mapOf( // Rewe: Eigenmarken and quality-level variants
+            "eggs" to listOf(
+                "ja! Frische Eier aus Bodenhaltung 10 Stück",
+                "REWE Beste Wahl Eier aus Freilandhaltung 6 Stück",
+                "REWE Bio Eier 6 Stück",
+                "ja! Bio Eier 6 Stück"
+            )
+        ),
+        2L to mapOf( // Edeka
+            "eggs" to listOf(
+                "GUT&GÜNSTIG Eier aus Bodenhaltung 10 Stück",
+                "GUT&GÜNSTIG Eier aus Freilandhaltung 10 Stück",
+                "EDEKA Bio Eier 6 Stück"
+            )
+        ),
         3L to mapOf( // Aldi Süd
+            "eggs" to listOf(
+                "Frische Eier aus Bodenhaltung 10 Stück",
+                "Frische Eier aus Freilandhaltung 10 Stück",
+                "Bio Eier 6 Stück",
+                "Eier aus Bodenhaltung 6 Stück"
+            ),
             "yogurt" to listOf("MILSANI Joghurt nach türkischer Art 3,5% Fett")
+        ),
+        4L to mapOf( // Lidl
+            "eggs" to listOf(
+                "Frische Eier aus Bodenhaltung 10 Stück",
+                "Frische Eier aus Freilandhaltung 10 Stück",
+                "Bio Eier 6 Stück"
+            )
+        ),
+        6L to mapOf( // Penny
+            "eggs" to listOf(
+                "Eier aus Bodenhaltung 10 Stück",
+                "Eier aus Freilandhaltung 10 Stück",
+                "Bio Eier 6 Stück"
+            )
         )
     )
 
@@ -84,28 +121,51 @@ object BrandCatalog {
             templates = listOf(
                 "{b} Joghurt 3,5% Fett",
                 "{b} Joghurt mild 0,1% Fett",
-                "{b} Sahnejoghurt 1,5% Fett"
+                "{b} Sahnejoghurt 1,5% Fett",
+                "{b} Griechischer Joghurt 10% Fett",
+                "{b} Fruchtjoghurt Erdbeere 150 g"
             )
         ),
         Group(
             key = "milk", categoryId = 2L, slot = BrandSlot.DAIRY,
             keywords = listOf("sut", "süt", "milch", "milk", "vollmilch", "hmilch", "h-milch"),
-            templates = listOf("{b} H-Milch 1,5%", "{b} Vollmilch 3,5%")
+            templates = listOf(
+                "{b} H-Milch 1,5% Fett",
+                "{b} Vollmilch 3,5% Fett",
+                "{b} Frische fettarme Milch 1,5%",
+                "{b} Bio H-Milch 3,8%",
+                "{b} Laktosefreie Milch 1,5%"
+            )
         ),
         Group(
             key = "butter", categoryId = 2L, slot = BrandSlot.DAIRY,
             keywords = listOf("tereyagi", "tereyağı", "butter"),
-            templates = listOf("{b} Deutsche Markenbutter 250 g")
+            templates = listOf(
+                "{b} Deutsche Markenbutter 250 g",
+                "{b} Süßrahmbutter 250 g",
+                "{b} Streichzarte Butter 250 g"
+            )
         ),
         Group(
             key = "cheese", categoryId = 2L, slot = BrandSlot.DAIRY,
             keywords = listOf("peynir", "kase", "käse", "kaese", "cheese", "gouda", "emmentaler"),
-            templates = listOf("{b} Gouda Scheiben 300 g", "{b} Emmentaler am Stück 400 g")
+            templates = listOf(
+                "{b} Gouda Scheiben 300 g",
+                "{b} Emmentaler am Stück 400 g",
+                "{b} Mozzarella 125 g",
+                "{b} Feta 200 g"
+            )
         ),
         Group(
-            key = "eggs", categoryId = 1L, slot = null,
-            keywords = listOf("yumurta", "ei", "eier", "egg", "eggs"),
-            templates = listOf("Eier 10 Stück Freilandhaltung")
+            key = "eggs", categoryId = 1L, slot = BrandSlot.EGGS,
+            keywords = listOf("yumurta", "yumurtalar", "ei", "eier", "freilandeier", "bodenhaltungseier", "egg", "eggs"),
+            templates = listOf(
+                "{b} Eier aus Bodenhaltung 10 Stück",
+                "{b} Eier aus Freilandhaltung 10 Stück",
+                "{b} Bio Eier 6 Stück",
+                "{b} Eier aus Freilandhaltung 6 Stück",
+                "{b} Bunte Eier gekocht und gefärbt 6 Stück"
+            )
         ),
         Group(
             key = "water", categoryId = 3L, slot = BrandSlot.WATER,
@@ -125,7 +185,13 @@ object BrandCatalog {
         Group(
             key = "bread", categoryId = 1L, slot = BrandSlot.BAKERY,
             keywords = listOf("ekmek", "brot", "bread", "toast", "sandwich"),
-            templates = listOf("{b} Toast 500 g", "{b} Vollkornbrot 500 g")
+            templates = listOf(
+                "{b} Toast 500 g",
+                "{b} Vollkornbrot 500 g",
+                "{b} Roggenmischbrot 750 g",
+                "{b} Mehrkornbrötchen 6 Stück",
+                "{b} Bauernbrot geschnitten 500 g"
+            )
         ),
         Group(
             key = "coffee", categoryId = 4L, slot = BrandSlot.COFFEE,
@@ -133,9 +199,15 @@ object BrandCatalog {
             templates = listOf("{b} Kaffee gemahlen 500 g", "{b} Löslicher Kaffee Gold")
         ),
         Group(
-            key = "pasta", categoryId = 4L, slot = BrandSlot.PASTA,
-            keywords = listOf("makarna", "nudeln", "pasta", "spaghetti"),
-            templates = listOf("{b} Spaghetti 500 g")
+            key = "pasta", categoryId = 4L, slot = null,
+            keywords = listOf("makarna", "nudeln", "pasta", "spaghetti", "penne", "fusilli"),
+            templates = listOf(
+                "Spaghetti 500 g",
+                "Penne Rigate 500 g",
+                "Fusilli 500 g",
+                "Vollkornnudeln 500 g",
+                "Bandnudeln 500 g"
+            )
         ),
         Group(
             key = "chocolate", categoryId = 4L, slot = BrandSlot.SNACKS,

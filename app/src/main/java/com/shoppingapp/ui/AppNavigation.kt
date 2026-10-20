@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Redeem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -22,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.shoppingapp.feature.scanner.BarcodeScannerScreen
+import com.shoppingapp.feature.offers.OffersScreen
 import com.shoppingapp.feature.stats.PfandScreen
 import com.shoppingapp.feature.stats.StatsScreen
 
@@ -29,6 +31,7 @@ data class BottomNavItem(val label: String, val route: String, val icon: ImageVe
 
 private val bottomItems = listOf(
     BottomNavItem("Liste", "home", Icons.Default.Home),
+    BottomNavItem("Prospekt", "offers", Icons.Default.LocalOffer),
     BottomNavItem("Pfand", "pfand", Icons.Default.Redeem),
     BottomNavItem("İstatistik", "stats", Icons.Default.Insights)
 )
@@ -67,6 +70,7 @@ fun AppNavigation() {
                     onNavigateToScanner = { navController.navigate("scanner") }
                 )
             }
+            composable("offers") { OffersScreen() }
             composable("pfand") { PfandScreen() }
             composable("stats") {
                 StatsScreen(onNavigateBack = { navController.popBackStack() })

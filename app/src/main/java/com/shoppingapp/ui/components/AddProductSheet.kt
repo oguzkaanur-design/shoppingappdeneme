@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +35,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
@@ -50,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.shoppingapp.data.catalog.BrandCatalog
+import com.shoppingapp.data.catalog.ProduceCatalog
 import com.shoppingapp.data.model.Category
 import com.shoppingapp.data.model.Store
 
@@ -83,6 +87,8 @@ fun AddProductSheet(
     var pfandText by remember { mutableStateOf("") }
     var priceText by remember { mutableStateOf("") }
     var touched by remember { mutableStateOf(false) }
+    var showProduceCatalog by remember { mutableStateOf(false) }
+    var produceQuery by remember { mutableStateOf("") }
 
     val qty = quantityText.replace(',', '.').toDoubleOrNull()
     val pfand = pfandText.replace(',', '.').toDoubleOrNull() ?: 0.0
@@ -136,6 +142,51 @@ fun AddProductSheet(
                             selected = selectedStoreId == store.id,
                             onClick = { selectedStoreId = store.id }
                         )
+                    }
+                }
+            }
+
+            OutlinedButton(
+                onClick = { showProduceCatalog = !showProduceCatalog },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if (showProduceCatalog) "Hazır ürün listesini kapat" else "Hazır ürünler · Fertige Produkte")
+            }
+
+            if (showProduceCatalog) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = produceQuery,
+                        onValueChange = { produceQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Ürün ara · Produkt suchen") }
+                    )
+                    Text("Bir ürüne dokununca listeye eklenir.", style = MaterialTheme.typography.bodySmall)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().height(220.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(ProduceCatalog.search(produceQuery), key = { "${it.turkish}-${it.german}" }) { produce ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+                                    .clickable {
+                                        val itemName = "${produce.turkish} (${produce.german})"
+                                        onConfirm(itemName, selectedStoreId, 1L, qty ?: 1.0, unit, pfand, 0.0)
+                                        showProduceCatalog = false
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(produce.turkish, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
+                                Text(produce.german, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
             }
