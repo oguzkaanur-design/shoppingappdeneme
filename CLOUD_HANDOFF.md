@@ -5,7 +5,7 @@ Proje kökü: bu klasör. Uygulama adı **Einkauf**, paket `com.shoppingapp`.
 
 ## Durum
 
-- Android uygulaması çalışıyor; telefonda `versionCode 9 / versionName 1.8` kurulu, veriler korunuyor.
+- Android uygulaması çalışıyor; telefonda `versionCode 10 / versionName 1.9` kurulu, veriler korunuyor.
 - Stack: Kotlin + Jetpack Compose (Material3), Hilt, Room (v6), CameraX + ML Kit barkod, Retrofit (Open Food Facts), Coil, OkHttp.
 - Sürümler: AGP 8.3.0, Kotlin 1.9.22, Gradle 8.14.5, JDK 17, compileSdk/targetSdk 34, minSdk 26.
 - Kalan işler: görsel tema yenilemesi (renk/derinlik/tipografi), gerçek barkodla tarama testi.
@@ -53,6 +53,9 @@ Proje kökü: bu klasör. Uygulama adı **Einkauf**, paket `com.shoppingapp`.
   (Room v6, migration 5→6). Böylece her işlem geçmişte görünür ve tek tek silinebilir.
 - Toplam = nakit + banka + **iade bekleyen Pfand**. Pfand ekranından eklenen her kayıt
   Cebim toplamına otomatik yansır; Pfand kartı Pfand ekranına götürür.
+- Pfand ekranındaki **İadeyi al** tek Room transaction'ında (`ShoppingDao.cashInAllPfand`)
+  bekleyen kayıtları iade edildi yapar ve toplamı "Pfand iadesi" notuyla nakit bakiyesine yazar;
+  böylece iade öncesi/sonrası Cebim toplamı değişmez, para iki kez sayılmaz.
 - Saf mantık: `feature/money/MoneySummary.kt` (+ `MoneySummaryTest`); geçiş testi:
   `MigrationTest.v5tenV6eGecisVeriyiKorurVeCebimTablosunuEkler`.
 

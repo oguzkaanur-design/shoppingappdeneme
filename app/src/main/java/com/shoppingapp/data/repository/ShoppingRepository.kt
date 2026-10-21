@@ -233,7 +233,11 @@ class ShoppingRepository @Inject constructor(
 
     suspend fun deletePfandEntry(entry: PfandEntry) = shoppingDao.deletePfandEntry(entry)
 
-    suspend fun returnAllPfand() = shoppingDao.markAllPfandReturned()
+    /**
+     * Bekleyen tüm Pfand'ı iade alındı yapar ve toplam tutarı nakit bakiyesine aktarır.
+     * @return Cebim'e eklenen tutar.
+     */
+    suspend fun cashInAllPfand(): Double = shoppingDao.cashInAllPfand()
 
     suspend fun clearReturnedPfand() = shoppingDao.clearReturnedPfand()
 

@@ -120,4 +120,33 @@ interface ShoppingDao {
 
     @Query("DELETE FROM money_entries")
     suspend fun clearMoneyEntries()
+
+    @Query("SELECT * FROM pfand_entries WHERE isReturned = 0")
+    suspend fun getPendingPfandOnce(): List<PfandEntry>
+
+    /**
+     * İadeyi tek adımda tamamlar: bekleyen tüm Pfand kayıtlarını iade alındı yapar ve
+     * toplamı nakit bakiyesine yazar.
+     *
+     * Tek transaction olması bilinçli: işaretleme ile para girişi birbirinden koparsa
+     * kullanıcı ya parayı kaybeder ya da aynı Pfand'ı iki kez nakde çevirir.
+     *
+     * @return nakde eklenen tutar (bekleyen yoksa 0).
+     */
+    @Transaction
+    suspend fun cashInAllPfand(): Double {
+        val pending = getPendingPfandOnce()
+        val total = pending.sumOf { it.unitAmount * it.quantity }
+        markAllPfandReturned()
+        if (total > 0.0) {
+            insertMoneyEntry(
+                MoneyEntry(
+                    account = MoneyAccount.CASH,
+                    amount = total,
+                    note = MoneyAccount.PFAND_CASH_IN_NOTE
+                )
+            )
+        }
+        return total
+    }
 }

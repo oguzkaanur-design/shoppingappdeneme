@@ -101,6 +101,9 @@ data class MoneyEntry(
 object MoneyAccount {
     const val CASH = "CASH"
     const val BANK = "BANK"
+
+    /** Pfand iadesi tamamlanınca nakde yazılan hareketin notu. */
+    const val PFAND_CASH_IN_NOTE = "Pfand iadesi"
 }
 
 /**

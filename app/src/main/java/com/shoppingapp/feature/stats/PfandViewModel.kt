@@ -50,9 +50,10 @@ class PfandViewModel @Inject constructor(
         }
     }
 
+    /** İadeyi tamamlar; bekleyen tutar Cebim'deki Nakit bakiyesine otomatik eklenir. */
     fun returnAll() {
         viewModelScope.launch {
-            repository.returnAllPfand()
+            repository.cashInAllPfand()
         }
     }
 

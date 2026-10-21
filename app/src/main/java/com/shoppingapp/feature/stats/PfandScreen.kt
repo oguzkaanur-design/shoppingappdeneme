@@ -228,7 +228,8 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
             title = { Text("İadeyi tamamla") },
             text = {
                 Text(
-                    "${euro(state.pendingTotal)} tutarındaki ${state.pendingUnits} adet Pfand iade alındı olarak işaretlensin mi?"
+                    "${euro(state.pendingTotal)} tutarındaki ${state.pendingUnits} adet Pfand iade alındı " +
+                        "olarak işaretlensin ve tutar Cebim'deki Nakit bakiyesine eklensin mi?"
                 )
             },
             confirmButton = {
@@ -237,7 +238,7 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                         viewModel.returnAll()
                         confirmReturn = false
                     }
-                ) { Text("İade alındı") }
+                ) { Text("İadeyi al") }
             },
             dismissButton = {
                 TextButton(onClick = { confirmReturn = false }) { Text("Vazgeç") }
@@ -305,8 +306,14 @@ private fun TotalCard(total: Double, units: Int, hasEntries: Boolean, onReturn: 
                         contentColor = MaterialTheme.colorScheme.secondaryContainer
                     )
                 ) {
-                    Text("İadeyi tamamla")
+                    Text("İadeyi al")
                 }
+                Text(
+                    text = "İade tamamlanınca ${euro(total)} Cebim'deki Nakit bakiyesine otomatik eklenir.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
     }
