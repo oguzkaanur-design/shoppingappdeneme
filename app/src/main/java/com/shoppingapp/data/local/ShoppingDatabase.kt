@@ -16,9 +16,10 @@ import com.shoppingapp.data.model.*
         PurchaseHistory::class,
         PurchaseHistoryItem::class,
         PfandEntry::class,
-        FlyerListItem::class
+        FlyerListItem::class,
+        MoneyEntry::class
     ],
-    version = 5,
+    version = 6,
     // Şemalar app/schemas altına yazılır; geçişler bu dosyalara karşı test edilir.
     exportSchema = true
 )

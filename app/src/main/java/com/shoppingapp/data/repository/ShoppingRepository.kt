@@ -41,6 +41,7 @@ class ShoppingRepository @Inject constructor(
     val purchaseHistory: Flow<List<PurchaseHistory>> = shoppingDao.getPurchaseHistory()
     val pendingPfand: Flow<List<PfandEntry>> = shoppingDao.getPendingPfand()
     val returnedPfand: Flow<List<PfandEntry>> = shoppingDao.getReturnedPfand()
+    val moneyEntries: Flow<List<MoneyEntry>> = shoppingDao.getMoneyEntries()
 
     private val defaultStores = listOf(
         Store(id = 1, name = "Rewe", colorHex = "#E2001A", aisleOrderJson = "[]"),
@@ -235,4 +236,22 @@ class ShoppingRepository @Inject constructor(
     suspend fun returnAllPfand() = shoppingDao.markAllPfandReturned()
 
     suspend fun clearReturnedPfand() = shoppingDao.clearReturnedPfand()
+
+    // ---- Cebim (nakit / banka) ----
+
+    /**
+     * Bakiyeye tek bir hareket ekler. [amount] işaretlidir: + para girdi, − harcandı.
+     * Geçersiz hesap veya sıfır tutar sessizce yok sayılır.
+     */
+    suspend fun addMoneyEntry(account: String, amount: Double, note: String = ""): Long? {
+        if (account != MoneyAccount.CASH && account != MoneyAccount.BANK) return null
+        if (amount == 0.0 || amount.isNaN() || amount.isInfinite()) return null
+        return shoppingDao.insertMoneyEntry(
+            MoneyEntry(account = account, amount = amount, note = note.trim())
+        )
+    }
+
+    suspend fun deleteMoneyEntry(entry: MoneyEntry) = shoppingDao.deleteMoneyEntry(entry)
+
+    suspend fun resetMoneyData() = shoppingDao.clearMoneyEntries()
 }

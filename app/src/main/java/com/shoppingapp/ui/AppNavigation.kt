@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Redeem
+import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.shoppingapp.feature.money.SavingsScreen
 import com.shoppingapp.feature.scanner.BarcodeScannerScreen
 import com.shoppingapp.feature.offers.FlyerListScreen
 import com.shoppingapp.feature.offers.FlyerListViewModel
@@ -37,12 +39,14 @@ import com.shoppingapp.feature.stats.StatsScreen
 
 data class BottomNavItem(val label: String, val route: String, val icon: ImageVector)
 
+// Alt bar 5 sekmeyle sınırlı: "İstatistik" artık liste ekranının üst barındaki grafik
+// düğmesinden açılıyor, yerine günlük kullanılan "Cebim" sekmesi geldi.
 private val bottomItems = listOf(
     BottomNavItem("Liste", "home", Icons.Default.Home),
     BottomNavItem("Prospekt", "offers", Icons.Default.LocalOffer),
     BottomNavItem("Fırsatlar", "flyerList", Icons.Default.Bookmark),
-    BottomNavItem("Pfand", "pfand", Icons.Default.Redeem),
-    BottomNavItem("İstatistik", "stats", Icons.Default.Insights)
+    BottomNavItem("Cebim", "money", Icons.Default.Savings),
+    BottomNavItem("Pfand", "pfand", Icons.Default.Redeem)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,6 +96,9 @@ fun AppNavigation() {
             }
             composable("offers") { OffersScreen() }
             composable("flyerList") { FlyerListScreen() }
+            composable("money") {
+                SavingsScreen(onOpenPfand = { navController.navigateTopLevel("pfand") })
+            }
             composable("pfand") { PfandScreen() }
             composable("stats") {
                 StatsScreen(onNavigateBack = { navController.popBackStack() })

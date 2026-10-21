@@ -106,4 +106,18 @@ interface ShoppingDao {
 
     @Query("DELETE FROM pfand_entries WHERE isReturned = 1")
     suspend fun clearReturnedPfand()
+
+    // ---- Cebim (nakit / banka) ----
+
+    @Query("SELECT * FROM money_entries ORDER BY createdAt DESC, id DESC")
+    fun getMoneyEntries(): Flow<List<MoneyEntry>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMoneyEntry(entry: MoneyEntry): Long
+
+    @Delete
+    suspend fun deleteMoneyEntry(entry: MoneyEntry)
+
+    @Query("DELETE FROM money_entries")
+    suspend fun clearMoneyEntries()
 }

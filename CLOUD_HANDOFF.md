@@ -5,8 +5,8 @@ Proje kökü: bu klasör. Uygulama adı **Einkauf**, paket `com.shoppingapp`.
 
 ## Durum
 
-- Android uygulaması çalışıyor; telefonda `versionCode 8 / versionName 1.7` kurulu, veriler korunuyor.
-- Stack: Kotlin + Jetpack Compose (Material3), Hilt, Room (v5), CameraX + ML Kit barkod, Retrofit (Open Food Facts), Coil, OkHttp.
+- Android uygulaması çalışıyor; telefonda `versionCode 9 / versionName 1.8` kurulu, veriler korunuyor.
+- Stack: Kotlin + Jetpack Compose (Material3), Hilt, Room (v6), CameraX + ML Kit barkod, Retrofit (Open Food Facts), Coil, OkHttp.
 - Sürümler: AGP 8.3.0, Kotlin 1.9.22, Gradle 8.14.5, JDK 17, compileSdk/targetSdk 34, minSdk 26.
 - Kalan işler: görsel tema yenilemesi (renk/derinlik/tipografi), gerçek barkodla tarama testi.
 
@@ -42,6 +42,19 @@ Proje kökü: bu klasör. Uygulama adı **Einkauf**, paket `com.shoppingapp`.
 - Alt menüdeki **Fırsatlar** sekmesi (`FlyerListScreen`) geçerli ve süresi dolmuş ürünleri ayırır,
   "24 Eki tarihine kadar" etiketiyle fiyat/adet/toplam gösterir; aynı fırsat tekrar eklenirse adet artar.
 - Birim testleri: `FlyerOfferParserTest`, `MarktguruConfigParserTest`, `FlyerCropTest`, `FlyerReaderTapTest`.
+
+## Cebim / birikim (v1.8)
+
+- Alt menüye **Cebim** sekmesi eklendi (`feature/money/SavingsScreen.kt`); yer açmak için
+  "İstatistik" sekmesi kaldırıldı, o ekran liste üst barındaki grafik düğmesinden açılıyor.
+- İki hesap var: **Nakit** ve **Banka**. Her kartta `−` ve `+` düğmeleri bir diyalog açar:
+  tutar (virgül/nokta kabul edilir), isteğe bağlı not ve "işlemden sonra bakiye" önizlemesi.
+- Bakiye ayrı kolonda tutulmaz: `money_entries` tablosundaki işaretli hareketlerin toplamıdır
+  (Room v6, migration 5→6). Böylece her işlem geçmişte görünür ve tek tek silinebilir.
+- Toplam = nakit + banka + **iade bekleyen Pfand**. Pfand ekranından eklenen her kayıt
+  Cebim toplamına otomatik yansır; Pfand kartı Pfand ekranına götürür.
+- Saf mantık: `feature/money/MoneySummary.kt` (+ `MoneySummaryTest`); geçiş testi:
+  `MigrationTest.v5tenV6eGecisVeriyiKorurVeCebimTablosunuEkler`.
 
 ## Derleme
 
@@ -88,7 +101,8 @@ Akış: APK'yı telefona indir → üzerine kur. (Yerel makinede `adb -s <ip>:<p
   (veri korunması + geçişsiz sürümün hata vermesi). Çalıştırmak için cihaz/emülatör gerekir:
   `./gradlew :app:connectedDebugAndroidTest`.
 - Örnek/demo ürünler sadece boş veritabanına yazılıyor; temizlemek için liste ekranı ⋮ → "Alışveriş verilerini sıfırla".
-- Git: tek commit var, remote yok, çoğu dosya untracked (`git config user.name` = "Claude Sonnet 4.5"). Push için önce kimlik/hesap bağlanmalı.
+- Git remote: `https://github.com/oguzkaanur-design/shoppingappdeneme`; `main` dalı ve `v*` etiketleri
+  `.github/workflows/android-release.yml` ile imzalı APK Release'i üretir (v1.7, v1.8 böyle yayınlandı).
 - 1.7 GB toplam boyutun ~460 MB'ı `app/build`, 16 MB'ı `screenshots` — klona/taşımaya gerekmez.
 
 ## Yedek plan: GitHub Actions ile APK (telefondan, bulut IDE'si olmadan)

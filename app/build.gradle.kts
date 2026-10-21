@@ -35,8 +35,8 @@ android {
         // Her yeni sürümde versionCode'u ARTIR (telefon "güncelleme" olarak algılar, veriler kalır).
         // CI / telefondan tetiklenen derlemelerde kod düzenlemeden üzerine yazılabilir:
         //   ./gradlew :app:assembleRelease -PversionCode=6 -PversionName=1.5
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 8
-        versionName = (findProperty("versionName") as String?) ?: "1.7"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 9
+        versionName = (findProperty("versionName") as String?) ?: "1.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

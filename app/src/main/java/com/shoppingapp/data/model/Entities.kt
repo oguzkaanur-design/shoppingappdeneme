@@ -83,6 +83,27 @@ data class PurchaseHistoryItem(
 )
 
 /**
+ * Cebimdeki para hareketi. Bakiye ayrı bir kolonda tutulmaz; hesabın bakiyesi
+ * hareketlerin toplamıdır, böylece her + / − işlemi geçmişte tek tek görünür ve geri alınabilir.
+ */
+@Entity(tableName = "money_entries")
+data class MoneyEntry(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    /** [MoneyAccount.CASH] veya [MoneyAccount.BANK]. */
+    val account: String,
+    /** Pozitif = para girdi, negatif = harcandı. */
+    val amount: Double,
+    val note: String = "",
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+/** Para hesaplarının sabit adları; veritabanında okunabilir metin olarak durur. */
+object MoneyAccount {
+    const val CASH = "CASH"
+    const val BANK = "BANK"
+}
+
+/**
  * Prospektüsten tıklanarak eklenen geçici fırsat ürünü. Normal alışveriş listesinden
  * ayrı tutulur çünkü fiyatı ve son geçerlilik tarihi broşüre bağlıdır.
  */

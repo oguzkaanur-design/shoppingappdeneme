@@ -35,7 +35,7 @@ class MigrationTest {
     private val context: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private val allTestDbs = listOf(DB_FROM_V3, DB_FROM_V2, DB_UNKNOWN_VERSION)
+    private val allTestDbs = listOf(DB_FROM_V5, DB_FROM_V3, DB_FROM_V2, DB_UNKNOWN_VERSION)
 
     @After
     fun tearDown() {
@@ -90,6 +90,58 @@ class MigrationTest {
                 assertEquals("Pfand kaydı korunmalı", 1, dao.getPendingPfand().first().size)
                 assertEquals("Kategori korunmalı", 1, dao.getAllCategories().first().size)
                 assertEquals("Market korunmalı", 1, dao.getAllStores().first().size)
+            }
+        } finally {
+            database.close()
+        }
+    }
+
+    /**
+     * v5'ten yükseltme: cebim tablosu eklenir; liste, Pfand ve fırsat ürünleri yerinde kalır.
+     */
+    @Test
+    fun v5tenV6eGecisVeriyiKorurVeCebimTablosunuEkler() {
+        deleteDatabase(DB_FROM_V5)
+
+        helper.createDatabase(DB_FROM_V5, 5).use { db ->
+            db.execSQL(
+                "INSERT INTO categories (id, nameDe, nameTr, iconName, colorHex) " +
+                    "VALUES (1, 'Obst', 'Meyve', 'apple', '#FF0000')"
+            )
+            db.execSQL(
+                "INSERT INTO stores (id, name, colorHex, aisleOrderJson) " +
+                    "VALUES (1, 'Rewe', '#00FF00', '[]')"
+            )
+            db.execSQL(
+                "INSERT INTO products (id, name, barcode, categoryId, imageUrl, unit, defaultStoreId, pfandAmount, priceEuro) " +
+                    "VALUES (1, 'Milch', '4001234567890', 1, NULL, 'L', 1, 0.25, 1.19)"
+            )
+            db.execSQL(
+                "INSERT INTO pfand_entries (id, label, unitAmount, quantity, createdAt, isReturned) " +
+                    "VALUES (1, 'Flaschen', 0.25, 4, 555, 0)"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB_FROM_V5, 6, true, AppMigrations.MIGRATION_5_6)
+
+        val database = DatabaseModule.buildDatabase(context, DB_FROM_V5)
+        try {
+            val dao = database.shoppingDao()
+            runBlocking {
+                assertEquals("Ürün korunmalı", "Milch", dao.getProductById(1)?.name)
+                assertEquals("Pfand korunmalı", 1, dao.getPendingPfand().first().size)
+                assertTrue("Cebim tablosu boş başlamalı", dao.getMoneyEntries().first().isEmpty())
+
+                val id = dao.insertMoneyEntry(
+                    com.shoppingapp.data.model.MoneyEntry(
+                        account = com.shoppingapp.data.model.MoneyAccount.CASH,
+                        amount = 12.5,
+                        note = "harçlık",
+                        createdAt = 999L
+                    )
+                )
+                assertTrue("Cebim tablosuna yazılabilmeli", id > 0)
+                assertEquals(1, dao.getMoneyEntries().first().size)
             }
         } finally {
             database.close()
@@ -226,6 +278,7 @@ class MigrationTest {
     }
 
     private companion object {
+        const val DB_FROM_V5 = "migration_from_v5.db"
         const val DB_FROM_V3 = "migration_from_v3.db"
         const val DB_FROM_V2 = "migration_from_v2.db"
         const val DB_UNKNOWN_VERSION = "migration_unknown.db"

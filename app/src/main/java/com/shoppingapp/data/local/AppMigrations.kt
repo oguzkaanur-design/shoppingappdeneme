@@ -58,6 +58,20 @@ object AppMigrations {
         }
     }
 
+    /** v6, cebimdeki nakit/banka hareketleri için tablo ekler; mevcut veri korunur. */
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `money_entries` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`account` TEXT NOT NULL, " +
+                    "`amount` REAL NOT NULL, " +
+                    "`note` TEXT NOT NULL, " +
+                    "`createdAt` INTEGER NOT NULL)"
+            )
+        }
+    }
+
     /** `Room.databaseBuilder(...).addMigrations(*AppMigrations.ALL)` için sıralı liste. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }
