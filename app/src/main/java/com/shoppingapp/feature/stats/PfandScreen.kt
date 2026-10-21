@@ -27,14 +27,12 @@ import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WineBar
 import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -84,7 +82,8 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
 
     var selectedPreset by remember { mutableStateOf(presets.first()) }
     var unitPrice by remember { mutableStateOf(amount(presets.first().amount)) }
-    var quantity by remember { mutableStateOf(1) }
+    var quantityText by remember { mutableStateOf("1") }
+    val quantity = PfandQuantity.parse(quantityText)
     var confirmReturn by remember { mutableStateOf(false) }
     var confirmReset by remember { mutableStateOf(false) }
 
@@ -139,17 +138,17 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                 AddCard(
                     selected = selectedPreset,
                     unitPrice = unitPrice,
-                    quantity = quantity,
+                    quantityText = quantityText,
                     onPresetSelected = {
                         selectedPreset = it
                         unitPrice = amount(it.amount)
                     },
                     onUnitPriceChange = { unitPrice = it },
-                    onQuantityChange = { quantity = (quantity + it).coerceAtLeast(1) },
+                    onQuantityChange = { quantityText = it },
                     onAdd = {
                         val price = unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0
-                        viewModel.addEntry(selectedPreset.label, price, quantity)
-                        quantity = 1
+                        quantity?.let { viewModel.addEntry(selectedPreset.label, price, it) }
+                        quantityText = "1"
                     }
                 )
             }
@@ -318,10 +317,10 @@ private fun TotalCard(total: Double, units: Int, hasEntries: Boolean, onReturn: 
 private fun AddCard(
     selected: PfandPreset,
     unitPrice: String,
-    quantity: Int,
+    quantityText: String,
     onPresetSelected: (PfandPreset) -> Unit,
     onUnitPriceChange: (String) -> Unit,
-    onQuantityChange: (Int) -> Unit,
+    onQuantityChange: (String) -> Unit,
     onAdd: () -> Unit
 ) {
     Card(
@@ -378,31 +377,21 @@ private fun AddCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    FilledTonalIconButton(
-                        onClick = { onQuantityChange(-1) },
-                        enabled = quantity > 1,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(Icons.Outlined.Remove, contentDescription = "Azalt", modifier = Modifier.size(18.dp))
-                    }
-                    Text(
-                        text = quantity.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 12.dp)
-                    )
-                    FilledTonalIconButton(
-                        onClick = { onQuantityChange(1) },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Arttır", modifier = Modifier.size(18.dp))
-                    }
-                }
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = { value ->
+                        if (value.length <= 4 && value.all(Char::isDigit)) onQuantityChange(value)
+                    },
+                    label = { Text("Adet") },
+                    singleLine = true,
+                    isError = quantityText.isNotEmpty() && PfandQuantity.parse(quantityText) == null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(0.8f)
+                )
             }
 
             Text(
-                text = "Toplam: ${euro((unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0) * quantity)}",
+                text = "Toplam: ${euro((unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0) * (PfandQuantity.parse(quantityText) ?: 0))}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
@@ -411,6 +400,7 @@ private fun AddCard(
 
             Button(
                 onClick = onAdd,
+                enabled = PfandQuantity.parse(quantityText) != null && (unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0.0,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)

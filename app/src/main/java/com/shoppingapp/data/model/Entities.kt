@@ -81,3 +81,23 @@ data class PurchaseHistoryItem(
     val priceEuro: Double,
     val quantity: Double
 )
+
+/**
+ * Prospektüsten tıklanarak eklenen geçici fırsat ürünü. Normal alışveriş listesinden
+ * ayrı tutulur çünkü fiyatı ve son geçerlilik tarihi broşüre bağlıdır.
+ */
+@Entity(tableName = "flyer_list_items")
+data class FlyerListItem(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val offerId: Long,
+    val storeName: String,
+    val storeColor: Long,
+    val productName: String,
+    val description: String = "",
+    val unitPrice: Double,
+    val quantity: Int = 1,
+    val imagePath: String? = null,
+    val validFromEpochMs: Long,
+    val validToEpochMs: Long,
+    val addedAt: Long = System.currentTimeMillis()
+)

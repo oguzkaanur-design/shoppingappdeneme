@@ -1,15 +1,12 @@
 package com.shoppingapp.feature.offers
 
-import android.graphics.Bitmap
-import android.view.ViewGroup
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import android.webkit.WebChromeClient
-import android.webkit.WebView
-import android.webkit.WebViewClient
-import androidx.activity.compose.BackHandler
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,259 +19,366 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.shoppingapp.data.offers.Flyer
+import com.shoppingapp.data.offers.FlyerPageUrls
+import com.shoppingapp.data.offers.FlyerPhase
+import com.shoppingapp.data.offers.FlyerStore
+import com.shoppingapp.data.offers.FlyerStores
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OffersScreen() {
-    var selectedOffer by remember { mutableStateOf<OfficialOfferLinks.StoreLink?>(null) }
+fun OffersScreen(viewModel: OffersViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsState()
+    var openedFlyer by remember { mutableStateOf<Flyer?>(null) }
+    val context = LocalContext.current
 
     Scaffold(topBar = {
         TopAppBar(title = {
             Column {
                 Text("Prospektüsler", fontWeight = FontWeight.Bold)
-                Text("Güncel market fırsatları", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "Haftalık broşürler · uygulama içinde",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         })
     }) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Card(
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF14583D))
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier.size(48.dp).background(Color(0xFFD8F36A), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.LocalOffer, contentDescription = null, tint = Color(0xFF17352C))
-                        }
-                        Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
-                            Text("Fırsatlar kapında", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text("Broşürleri uygulama içinde keşfet", style = MaterialTheme.typography.bodySmall, color = Color(0xFFD7E7DD))
-                        }
-                    }
-                }
-            }
-            item {
-                Text("Market seç", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            }
-            items(OfficialOfferLinks.stores, key = { it.name }) { offer ->
-                StoreOfferCard(offer = offer, onClick = { selectedOffer = offer })
-            }
-            item {
-                Text(
-                    "Prospektüsler marketlerin resmî sayfalarından canlı yüklenir. Fiyatlar ve içerik seçili mağazaya göre değişebilir.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-        }
-    }
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            StoreSelector(selected = state.selectedStore, onSelect = viewModel::selectStore)
 
-    selectedOffer?.let { offer ->
-        Dialog(
-            onDismissRequest = { selectedOffer = null },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                InAppOfferReader(offer = offer, onClose = { selectedOffer = null })
-            }
-        }
-    }
-}
+            Box(modifier = Modifier.weight(1f)) {
+                when {
+                    state.loading -> LoadingState(store = state.selectedStore)
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun StoreOfferCard(offer: OfficialOfferLinks.StoreLink, onClick: () -> Unit) {
-    val brandColor = Color(offer.brandColor)
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(58.dp).background(brandColor.copy(alpha = 0.12f), RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(offer.shortName, color = brandColor, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
-            }
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                Text(offer.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(offer.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            TextButton(onClick = onClick) { Text("Görüntüle") }
-        }
-    }
-}
+                    state.error != null -> ErrorState(
+                        message = state.error.orEmpty(),
+                        store = state.selectedStore,
+                        onRetry = viewModel::retry
+                    )
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun InAppOfferReader(offer: OfficialOfferLinks.StoreLink, onClose: () -> Unit) {
-    val context = LocalContext.current
-    var webView by remember { mutableStateOf<WebView?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var loadError by remember { mutableStateOf<String?>(null) }
+                    state.flyers.isEmpty() -> EmptyState(
+                        store = state.selectedStore,
+                        onRetry = viewModel::retry
+                    )
 
-    BackHandler {
-        val currentView = webView
-        if (currentView?.canGoBack() == true) currentView.goBack() else onClose()
-    }
-
-    DisposableEffect(webView) {
-        onDispose {
-            webView?.apply {
-                stopLoading()
-                webChromeClient = null
-                webViewClient = WebViewClient()
-                (parent as? ViewGroup)?.removeView(this)
-                destroy()
-            }
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = {
-                if (webView?.canGoBack() == true) webView?.goBack() else onClose()
-            }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(offer.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Resmî prospektüs · uygulama içinde", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            IconButton(onClick = { loadError = null; isLoading = true; webView?.reload() }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Yeniden yükle")
-            }
-        }
-        Divider()
-        Box(modifier = Modifier.fillMaxSize()) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = {
-                    WebView(context).apply {
-                        webView = this
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.builtInZoomControls = true
-                        settings.displayZoomControls = false
-                        settings.useWideViewPort = true
-                        settings.loadWithOverviewMode = true
-                        webChromeClient = WebChromeClient()
-                        webViewClient = object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
-                                !OfferNavigationPolicy.allowsInAppNavigation(request.url.toString())
-
-                            override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
-                                isLoading = true
-                                loadError = null
-                            }
-
-                            override fun onPageFinished(view: WebView, url: String?) {
-                                isLoading = false
-                            }
-
-                            override fun onReceivedError(
-                                view: WebView,
-                                request: WebResourceRequest,
-                                error: WebResourceError
-                            ) {
-                                if (request.isForMainFrame) {
-                                    isLoading = false
-                                    loadError = "Sayfa yüklenemedi. İnternet bağlantını kontrol edip yeniden dene."
-                                }
-                            }
-
-                            override fun onReceivedHttpError(
-                                view: WebView,
-                                request: WebResourceRequest,
-                                errorResponse: WebResourceResponse
-                            ) {
-                                if (request.isForMainFrame && errorResponse.statusCode >= 400) {
-                                    isLoading = false
-                                    loadError = "Market sayfası şu anda açılamıyor (${errorResponse.statusCode}). Biraz sonra yeniden dene."
-                                }
-                            }
-                        }
-                        loadUrl(offer.url)
-                    }
-                }
-            )
-            if (isLoading && loadError == null) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.TopCenter).padding(top = 18.dp))
-            }
-            loadError?.let { message ->
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(28.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(message, style = MaterialTheme.typography.bodyLarge)
-                    Spacer(Modifier.height(12.dp))
-                    Button(onClick = { loadError = null; isLoading = true; webView?.reload() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = null)
-                        Text("  Yeniden dene")
-                    }
-                    Text(
-                        "Bazı market sayfaları bölge veya çerez onayı isteyebilir.",
-                        modifier = Modifier.padding(top = 12.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> FlyerList(
+                        flyers = state.flyers,
+                        store = state.selectedStore,
+                        onOpen = { openedFlyer = it }
                     )
                 }
             }
         }
     }
+
+    openedFlyer?.let { flyer ->
+        FlyerReaderDialog(
+            flyer = flyer,
+            store = state.selectedStore,
+            loadOffers = viewModel::offersForPage,
+            onAddOffer = { offer, quantity ->
+                viewModel.addOfferToFlyerList(offer, quantity)
+                Toast.makeText(
+                    context,
+                    "${offer.name} fırsat listesine eklendi",
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onClose = { openedFlyer = null }
+        )
+    }
+}
+
+@Composable
+private fun StoreSelector(selected: FlyerStore, onSelect: (FlyerStore) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(FlyerStores.all, key = { it.id }) { store ->
+            val isSelected = store.id == selected.id
+            val brand = Color(store.brandColor)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (isSelected) brand else MaterialTheme.colorScheme.surface)
+                    .border(
+                        BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant),
+                        RoundedCornerShape(14.dp)
+                    )
+                    .clickable { onSelect(store) }
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    store.shortName,
+                    color = if (isSelected) Color.White else brand,
+                    fontWeight = FontWeight.Black,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FlyerList(flyers: List<Flyer>, store: FlyerStore, onOpen: (Flyer) -> Unit) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item { HeroBanner() }
+        items(flyers, key = { it.leafletId }) { flyer ->
+            FlyerCard(flyer = flyer, store = store, onOpen = { onOpen(flyer) })
+        }
+        item {
+            Text(
+                "Broşürler marketlerin yayınladığı haftalık prospektüslerden alınır (marktguru). " +
+                    "Fiyatlar ve ürünler seçili mağazaya göre değişebilir.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroBanner() {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF14583D))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(44.dp).background(Color(0xFFD8F36A), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.LocalOffer, contentDescription = null, tint = Color(0xFF17352C))
+            }
+            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                Text(
+                    "Fırsatlar kapında",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    "Broşürü seç, sayfaları kaydır, yakınlaştır.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFD7E7DD)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FlyerCard(flyer: Flyer, store: FlyerStore, onOpen: () -> Unit) {
+    val context = LocalContext.current
+    Card(
+        onClick = onOpen,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(FlyerPageUrls.cover(flyer.leafletId))
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(width = 86.dp, height = 122.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
+            Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+                PhaseBadge(flyer)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "${store.shortName} Prospektü",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    FlyerDateLabel.range(flyer),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    buildString {
+                        append("${flyer.pageCount} sayfa")
+                        if (flyer.offerCount > 0) append(" · ${flyer.offerCount} fırsat")
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Uygulamada aç  →",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color(store.brandColor)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhaseBadge(flyer: Flyer) {
+    val (container, content) = when (flyer.phase()) {
+        FlyerPhase.CURRENT -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+        FlyerPhase.UPCOMING -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+        FlyerPhase.PAST -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(container)
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Text(
+            FlyerDateLabel.phaseLabel(flyer),
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = content
+        )
+    }
+}
+
+@Composable
+private fun LoadingState(store: FlyerStore) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(16.dp))
+        Text(
+            "${store.name} prospektüsleri getiriliyor…",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            "Broşür listesi internetten alınıyor.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(message: String, store: FlyerStore, onRetry: () -> Unit) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxSize().padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "Prospektüsler yüklenemedi",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Icon(Icons.Default.Refresh, contentDescription = null)
+            Text("  Yeniden dene")
+        }
+        TextButton(onClick = { openUrl(context, store.pageUrl) }) {
+            Text("Resmî sayfayı tarayıcıda aç")
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(store: FlyerStore, onRetry: () -> Unit) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxSize().padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "${store.name} için güncel broşür bulunamadı",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Yeni haftanın broşürü henüz yayınlanmamış olabilir.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onRetry) {
+            Icon(Icons.Default.Refresh, contentDescription = null)
+            Text("  Yeniden dene")
+        }
+        TextButton(onClick = { openUrl(context, store.pageUrl) }) {
+            Text("Resmî sayfayı tarayıcıda aç")
+        }
+    }
+}
+
+private fun openUrl(context: Context, url: String) {
+    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+    if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
 }

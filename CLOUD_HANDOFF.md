@@ -5,10 +5,43 @@ Proje kökü: bu klasör. Uygulama adı **Einkauf**, paket `com.shoppingapp`.
 
 ## Durum
 
-- Android uygulaması çalışıyor; telefonda `versionCode 3 / versionName 1.2` kurulu, veriler korunuyor.
-- Stack: Kotlin + Jetpack Compose (Material3), Hilt, Room (v4), CameraX + ML Kit barkod, Retrofit (Open Food Facts), Coil.
+- Android uygulaması çalışıyor; telefonda `versionCode 8 / versionName 1.7` kurulu, veriler korunuyor.
+- Stack: Kotlin + Jetpack Compose (Material3), Hilt, Room (v5), CameraX + ML Kit barkod, Retrofit (Open Food Facts), Coil, OkHttp.
 - Sürümler: AGP 8.3.0, Kotlin 1.9.22, Gradle 8.14.5, JDK 17, compileSdk/targetSdk 34, minSdk 26.
 - Kalan işler: görsel tema yenilemesi (renk/derinlik/tipografi), gerçek barkodla tarama testi.
+
+## Prospektüsler (v1.6)
+
+- Marketlerin kendi siteleri uygulama içi WebView'de boş kaldığı için (REWE/EDEKA/ALDI 403,
+  JS koruması) WebView kaldırıldı. Broşürler artık sayfa görseli olarak gösteriliyor.
+- Kaynak: `https://www.marktguru.de/rp/<market>-prospekte` sayfasındaki gömülü JSON
+  (`data/offers/FlyerCatalogParser.kt`) ve CDN sayfaları
+  `https://cdn.marktguru.de/api/v1/leaflets/<id>/images/pages/<n>/xlarge.webp`.
+- `FlyerRepository` günlük `?cb=` parametresi + `Cache-Control: no-cache` kullanır; aynı adres
+  bazen küçük bir bölgesel sürüm döndürdüğü için tam broşür gelene kadar en fazla 3 istek yapıp
+  sonuçları birleştirir.
+- `FlyerSelection` bu haftanın en kapsamlı broşürünü + gelecek haftanın en kapsamlı broşürünü
+  gösterir; hiçbiri yoksa en son broşüre düşer.
+- Okuyucu: `FlyerReader.kt` — sayfalar arası kaydırma, çift dokunarak/iki parmakla yakınlaştırma,
+  komşu sayfaları önceden yükleme. Testler: `FlyerCatalogParserTest`, `FlyerSelectionTest`,
+  `FlyerPageUrlsTest`, `FlyerCatalogUrlTest`, `FlyerDateLabelTest`.
+- Not: uygulama içi broşür görüntüleme kişisel kullanım içindir; marktguru atfı ekranda duruyor.
+
+## Tıklanabilir prospektüs + Fırsatlar (v1.7)
+
+- Okuyucuda sayfa başına teklifler `api.marktguru.de/api/v1/offers?as=mobiledetailed&leafletId=…&pageIndex=…`
+  üzerinden alınır; ürün alanları (`coordinates`) aynı leaflet detayından okunur. API anahtarları
+  uygulamaya gömülmez, `marktguru.de` ana sayfasındaki `config` bloğundan okunur (`MarktguruConfigProvider`).
+- `FlyerReader` ürün alanlarına yeşil ＋ işareti çizer. Dokunuş, sayfanın o anki yakınlaştırma/kaydırma
+  durumuna göre normalize koordinata çevrilip ürüne eşleştirilir (`offerAt`, test: `FlyerReaderTapTest`).
+  İşaretler kendi clickable katmanını kullanmaz: üstteki çift dokunma dedektörü dokunuşu tüketiyor.
+- Onay sayfası (`FlyerOfferSheet`) ad, açıklama, fiyat, son geçerlilik tarihi ve adet gösterir;
+  **Dialog** olarak çizilir çünkü okuyucu da bir Dialog ve ModalBottomSheet onun arkasında kalıyordu.
+- Onaylanınca ürün `flyer_list_items` tablosuna (Room v5, migration 4→5) yazılır: market, ad, fiyat,
+  adet, geçerlilik aralığı ve sayfadan kırpılan ürün fotoğrafı (`FlyerImageStore`).
+- Alt menüdeki **Fırsatlar** sekmesi (`FlyerListScreen`) geçerli ve süresi dolmuş ürünleri ayırır,
+  "24 Eki tarihine kadar" etiketiyle fiyat/adet/toplam gösterir; aynı fırsat tekrar eklenirse adet artar.
+- Birim testleri: `FlyerOfferParserTest`, `MarktguruConfigParserTest`, `FlyerCropTest`, `FlyerReaderTapTest`.
 
 ## Derleme
 

@@ -2,6 +2,7 @@ package com.shoppingapp.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.shoppingapp.data.dao.FlyerListDao
 import com.shoppingapp.data.dao.ShoppingDao
 import com.shoppingapp.data.model.*
 
@@ -14,12 +15,14 @@ import com.shoppingapp.data.model.*
         PantryItem::class,
         PurchaseHistory::class,
         PurchaseHistoryItem::class,
-        PfandEntry::class
+        PfandEntry::class,
+        FlyerListItem::class
     ],
-    version = 4,
+    version = 5,
     // Şemalar app/schemas altına yazılır; geçişler bu dosyalara karşı test edilir.
     exportSchema = true
 )
 abstract class ShoppingDatabase : RoomDatabase() {
     abstract fun shoppingDao(): ShoppingDao
+    abstract fun flyerListDao(): FlyerListDao
 }

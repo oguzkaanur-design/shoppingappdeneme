@@ -37,6 +37,27 @@ object AppMigrations {
         }
     }
 
+    /** v5, prospektüsten eklenen fırsat ürünleri için ayrı tablo ekler; mevcut veri korunur. */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `flyer_list_items` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`offerId` INTEGER NOT NULL, " +
+                    "`storeName` TEXT NOT NULL, " +
+                    "`storeColor` INTEGER NOT NULL, " +
+                    "`productName` TEXT NOT NULL, " +
+                    "`description` TEXT NOT NULL, " +
+                    "`unitPrice` REAL NOT NULL, " +
+                    "`quantity` INTEGER NOT NULL, " +
+                    "`imagePath` TEXT, " +
+                    "`validFromEpochMs` INTEGER NOT NULL, " +
+                    "`validToEpochMs` INTEGER NOT NULL, " +
+                    "`addedAt` INTEGER NOT NULL)"
+            )
+        }
+    }
+
     /** `Room.databaseBuilder(...).addMigrations(*AppMigrations.ALL)` için sıralı liste. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

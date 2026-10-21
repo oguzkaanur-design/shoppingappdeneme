@@ -2,6 +2,7 @@ package com.shoppingapp.di
 
 import android.content.Context
 import androidx.room.Room
+import com.shoppingapp.data.dao.FlyerListDao
 import com.shoppingapp.data.dao.ShoppingDao
 import com.shoppingapp.data.local.AppMigrations
 import com.shoppingapp.data.local.ShoppingDatabase
@@ -45,5 +46,11 @@ object DatabaseModule {
     @Singleton
     fun provideShoppingDao(database: ShoppingDatabase): ShoppingDao {
         return database.shoppingDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFlyerListDao(database: ShoppingDatabase): FlyerListDao {
+        return database.flyerListDao()
     }
 }
