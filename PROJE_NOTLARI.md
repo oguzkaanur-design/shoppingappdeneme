@@ -262,3 +262,17 @@ Tasarım yönü `ui-ux-pro-max` skill'inin ürettiği "fresh green + food amber"
 - Uygulama bilgisi ekranında yeni ikon ve **Einkauf** adı doğrulandı.
 - Gerçek telefon: **versionCode 2 → 3 yerinde güncellendi (uninstall yok)**, veriler korundu, uygulama açıldı ve yeni ekleme sayfası telefonda doğru çizildi.
 - **Not:** Telefonda hâlâ 1.1 ile gelen eski demo ürünler var (ör. "Süt 1.5% (Milch)") çünkü örnek veri yalnızca boş veritabanına yazılır; temizlemek için ⋮ → "Alışveriş verilerini sıfırla".
+
+---
+
+## 🚀 v2.0 — Kiler, reyon, yedekleme, grafikler, hatırlatıcılar
+
+- **Kiler**: gerçek ekran, kritik eşik, SKT uyarısı, tek dokunuşla listeye ekleme, alışverişte otomatik stok artışı.
+- **Reyon sıralaması**: 9 market için `aisleOrderJson` dolduruldu; market seçilince liste reyonlara göre gruplanır.
+- **Yedekleme**: JSON dışa/içe aktarma + günlük otomatik yerel yedek + yerel yedekten geri yükleme.
+- **İstatistik**: haftalık/aylık Canvas grafiği, kategori dağılımı, market karşılaştırması, fiyat trendi.
+- **Bildirimler**: WorkManager günlük hatırlatıcı (fırsat SKT, kritik stok, haftalık liste) + ayar/izin ekranı.
+- **Hız**: ana ekran widget'ı, market modu, listeyi paylaşma, sık alınanlar, son alışverişi tekrarla.
+- **Dayanıklılık**: prospektüs önbelleği/çevrimdışı bandı, kısmi `strings.xml`, yeni saf mantık testleri.
+- **Kalan borç**: tüm arayüz metinlerinin `strings.xml`'e taşınması (Almanca için gerekli), gerçek barkodla
+  cihaz testi, Compose UI testleri, AGP/Kotlin sürüm yükseltmesi.

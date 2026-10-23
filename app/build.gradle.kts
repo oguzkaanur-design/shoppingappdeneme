@@ -35,8 +35,8 @@ android {
         // Her yeni sürümde versionCode'u ARTIR (telefon "güncelleme" olarak algılar, veriler kalır).
         // CI / telefondan tetiklenen derlemelerde kod düzenlemeden üzerine yazılabilir:
         //   ./gradlew :app:assembleRelease -PversionCode=6 -PversionName=1.5
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 10
-        versionName = (findProperty("versionName") as String?) ?: "1.9"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 11
+        versionName = (findProperty("versionName") as String?) ?: "2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -104,6 +104,9 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-compiler:2.48")
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    // WorkManager (hatırlatıcı bildirimleri)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Room Database
     implementation("androidx.room:room-runtime:2.6.1")

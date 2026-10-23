@@ -84,6 +84,10 @@ fun OffersScreen(viewModel: OffersViewModel = hiltViewModel()) {
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             StoreSelector(selected = state.selectedStore, onSelect = viewModel::selectStore)
 
+            if (state.fromCache && !state.loading) {
+                CacheBanner(cachedAt = state.cachedAt, onRetry = viewModel::retry)
+            }
+
             Box(modifier = Modifier.weight(1f)) {
                 when {
                     state.loading -> LoadingState(store = state.selectedStore)
@@ -155,6 +159,40 @@ private fun StoreSelector(selected: FlyerStore, onSelect: (FlyerStore) -> Unit) 
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun CacheBanner(cachedAt: Long?, onRetry: () -> Unit) {
+    val label = cachedAt?.let {
+        val date = java.text.SimpleDateFormat("d MMM HH:mm", java.util.Locale.GERMANY)
+            .format(java.util.Date(it))
+        "Son kayıtlı liste · $date"
+    } ?: "Son kayıtlı liste"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "Broşürler şu an alınamadı",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+        TextButton(onClick = onRetry) { Text("Yenile") }
     }
 }
 

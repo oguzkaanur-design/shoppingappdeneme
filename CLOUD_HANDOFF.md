@@ -136,3 +136,38 @@ Notlar:
 - `versionCode` artmazsa telefon paketi güncelleme olarak kabul etmez.
 - Sürüm numarası kod düzenlemeden verilebilir: `./gradlew :app:assembleRelease -PversionCode=4 -PversionName=1.3`
 - Artifact indirmesi zip verir; Release asset doğrudan `.apk` dosyasıdır.
+
+## v2.0: Kiler, reyon sırası, yedekleme, grafikler, hatırlatıcılar
+
+- **Kiler sekmesi** (`feature/pantry/`): `pantry_items` artık kullanılıyor. Kritik eşik altına düşen
+  ürün "Kritik stok" bölümünde; tek dokunuşla alışveriş listesine ekleniyor, toplu ekleme düğmesi var.
+  Son kullanma tarihi 3 gün kala uyarı verir. Alışveriş tamamlanınca kilerdeki stok satın alınan
+  adet kadar **kendiliğinden artar** (`ShoppingDao.increasePantryQuantity`). Saf kurallar:
+  `PantrySummary.kt` (+ `PantrySummaryTest`).
+- **Reyon sıralaması** (`data/aisle/AisleOrder.kt`): `Store.aisleOrderJson` artık 9 market için
+  gerçek kategori sırası taşıyor. Market çipi seçilince liste "Reyon n" başlıklarıyla gruplanır;
+  numara marketin sırasındaki gerçek konumdur. Ayrıştırma Gson ile (JVM test edilebilir).
+- **Yedekleme** (`data/backup/BackupManager.kt`, `feature/backup/`): tüm tablolar tek JSON'da.
+  SAF ile dışa/içe aktarma, her açılışta günde bir kez yerel yedek (`files/backups/auto-*.json`,
+  son 5 saklanır), yerel yedeği geri yükleme. Geri yükleme tek Room transaction'ı.
+  Görseller yedeğe girmez (yalnızca yolları).
+- **İstatistik** (`feature/stats/SpendingAnalytics.kt`): haftalık/aylık harcama sütun grafiği
+  (Compose Canvas, ek kütüphane yok), kategori dağılımı, market karşılaştırması (ortalama sepet),
+  ürün fiyat trendi (son iki alışveriş). Veri `purchase_history_items` + `purchase_history` join'i.
+- **Hatırlatıcılar** (`notifications/`): WorkManager günlük işi (18:00): süresi 2 günden az kalan
+  fırsatlar, kritik kiler stoğu, cumartesi boş liste hatırlatması. Ayar ve bildirim izni
+  Yedekleme ekranında. Kanal `einkauf_reminders`, günde bir kez bildirim. Karar mantığı
+  `ReminderPlanner.kt` içinde saf fonksiyon (+ `ReminderPlannerTest`); "Bildirimleri şimdi dene"
+  düğmesi aynı planlayıcıyı çalıştırıp bildirimi anında gösterir.
+- **Günlük kullanım**: ana ekran widget'ı (alınacak sayısı + barkod tara kısayolu,
+  `widget/ShoppingWidgetProvider`), **market modu** (büyük satırlar, satıra dokununca işaretle),
+  listeyi metin olarak paylaşma (`feature/share/ListShare.kt`), "Sık alınanlar" şeridi ve
+  "Son alışverişi tekrarla". Pfand sekmesi kaldırıldı; Cebim ekranındaki Pfand kartından açılıyor.
+- **Dayanıklılık**: broşür listesi cihazda önbelleklenir (`FlyerCache`); ağ hatasında boş ekran
+  yerine "Son kayıtlı liste" bandı görünür. Yeni metinlerin bir kısmı `strings.xml`'e taşındı
+  (alt menü, widget, yedekleme başlığı); ekran içi metinlerin çoğu hâlâ kodda.
+- **Sürüm**: versionCode 11 / versionName 2.0. Şema değişmedi (Room v6 kalıyor), migration gerekmedi.
+- **Doğrulama**: `:app:testDebugUnitTest` 95 test; emülatörde (API 37) Kiler ekleme → listeye ekleme,
+  Aldi Süd reyon başlığı, market modu, alışveriş tamamlama (€3,09) → kiler stoğu 1→2, sık alınanlar,
+  son alışverişi tekrarla, yerel yedek alma/geri yükleme (JSON içeriği doğrulandı), Prospekt
+  yükleme + önbellek dosyası, bildirim kanalı ve WorkManager işi kontrol edildi.

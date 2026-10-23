@@ -1,5 +1,7 @@
 package com.shoppingapp.ui
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +26,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,8 +37,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.shoppingapp.R
+import com.shoppingapp.data.aisle.AisleGroup
+import com.shoppingapp.data.aisle.AisleOrder
 import com.shoppingapp.data.model.Category
 import com.shoppingapp.data.model.Store
+import com.shoppingapp.feature.share.ListShare
+import com.shoppingapp.feature.share.ShareLine
 import com.shoppingapp.data.repository.PurchaseReceipt
 import com.shoppingapp.ui.components.AddProductSheet
 import com.shoppingapp.ui.components.ProductThumb
@@ -46,18 +53,31 @@ import java.util.Locale
 fun ShoppingScreen(
     onNavigateToStats: () -> Unit,
     onNavigateToScanner: () -> Unit,
+    onNavigateToBackup: () -> Unit = {},
     viewModel: ShoppingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val receipt by viewModel.receipt.collectAsState()
+    val message by viewModel.message.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var showAddDialog by remember { mutableStateOf(false) }
     var showCompleteDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    var marketMode by remember { mutableStateOf(false) }
     val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(message) {
+        message?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.dismissMessage()
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -82,6 +102,25 @@ fun ShoppingScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
+                    IconButton(onClick = { marketMode = !marketMode }) {
+                        Icon(
+                            Icons.Default.Storefront,
+                            contentDescription = if (marketMode) "Normal listeye dön" else "Market modu",
+                            tint = if (marketMode) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            modifier = if (marketMode) {
+                                Modifier
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary)
+                                    .padding(4.dp)
+                            } else {
+                                Modifier
+                            }
+                        )
+                    }
                     IconButton(onClick = { showAddDialog = true }) {
                         Icon(
                             Icons.Default.Add,
@@ -101,6 +140,32 @@ fun ShoppingScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Listeyi paylaş") },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                enabled = uiState.pendingItems.isNotEmpty(),
+                                onClick = {
+                                    showMenu = false
+                                    shareList(context, uiState)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Son alışverişi tekrarla") },
+                                leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
+                                enabled = uiState.frequent.isNotEmpty(),
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.repeatLastPurchase()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Yedekleme ve ayarlar") },
+                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    onNavigateToBackup()
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text("Alışveriş verilerini sıfırla") },
                                 leadingIcon = {
@@ -160,13 +225,22 @@ fun ShoppingScreen(
                 }
             }
 
-            SummaryCard(
-                pendingCount = uiState.pendingItems.size,
-                purchasedCount = uiState.purchasedItems.size,
-                pfandTotal = uiState.pfandTotal,
-                euroTotal = uiState.euroTotal,
-                onComplete = { showCompleteDialog = true }
-            )
+            if (!marketMode && uiState.frequent.isNotEmpty()) {
+                FrequentStrip(
+                    rows = uiState.frequent,
+                    onAdd = viewModel::addFrequent
+                )
+            }
+
+            if (!marketMode) {
+                SummaryCard(
+                    pendingCount = uiState.pendingItems.size,
+                    purchasedCount = uiState.purchasedItems.size,
+                    pfandTotal = uiState.pfandTotal,
+                    euroTotal = uiState.euroTotal,
+                    onComplete = { showCompleteDialog = true }
+                )
+            }
 
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -174,20 +248,53 @@ fun ShoppingScreen(
                 }
             } else if (uiState.items.isEmpty()) {
                 EmptyListState(onScan = onNavigateToScanner, onAdd = { showAddDialog = true })
+            } else if (marketMode) {
+                MarketModeList(
+                    pending = uiState.pendingItems,
+                    purchased = uiState.purchasedItems,
+                    onToggle = { item -> viewModel.togglePurchased(item.listItem) },
+                    onComplete = { showCompleteDialog = true },
+                    modifier = Modifier.fillMaxSize()
+                )
             } else {
+                // Seçili market varsa ürünler o marketin reyon sırasına göre gruplanır.
+                val groups: List<AisleGroup<UiShoppingItem>> = when {
+                    uiState.selectedStore != null -> AisleOrder.group(
+                        items = uiState.pendingItems,
+                        order = uiState.aisleOrder,
+                        categoryOf = { it.category?.id }
+                    )
+
+                    uiState.pendingItems.isEmpty() -> emptyList()
+                    else -> listOf(AisleGroup(1, null, uiState.pendingItems))
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 130.dp)
                 ) {
                     if (uiState.pendingItems.isNotEmpty()) {
                         item { SectionHeader("Alınacaklar", uiState.pendingItems.size) }
-                        items(uiState.pendingItems, key = { it.listItem.id }) { item ->
-                            ShoppingItemCard(
-                                item = item,
-                                onToggle = { viewModel.togglePurchased(item.listItem) },
-                                onDelete = { viewModel.deleteItem(item.listItem) },
-                                onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) }
-                            )
+                        groups.forEach { group ->
+                            if (uiState.selectedStore != null) {
+                                item(key = "aisle-${group.aisleNumber}-${group.categoryId}") {
+                                    AisleHeader(
+                                        number = group.aisleNumber,
+                                        title = group.categoryId?.let { id ->
+                                            uiState.categories.firstOrNull { it.id == id }?.nameTr
+                                        } ?: "Diğer",
+                                        count = group.items.size
+                                    )
+                                }
+                            }
+                            items(group.items, key = { it.listItem.id }) { item ->
+                                ShoppingItemCard(
+                                    item = item,
+                                    onToggle = { viewModel.togglePurchased(item.listItem) },
+                                    onDelete = { viewModel.deleteItem(item.listItem) },
+                                    onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) }
+                                )
+                            }
                         }
                     }
 
@@ -785,6 +892,223 @@ private fun ReceiptDialog(receipt: PurchaseReceipt, onDismiss: () -> Unit) {
             Button(onClick = onDismiss) { Text("Tamam") }
         }
     )
+}
+
+@Composable
+private fun FrequentStrip(
+    rows: List<com.shoppingapp.data.model.FrequentProductRow>,
+    onAdd: (com.shoppingapp.data.model.FrequentProductRow) -> Unit
+) {
+    Column(modifier = Modifier.padding(top = 2.dp, bottom = 2.dp)) {
+        Text(
+            "Sık alınanlar · dokun ekle",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 20.dp, bottom = 4.dp)
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(rows, key = { it.productId }) { row ->
+                AssistChip(
+                    onClick = { onAdd(row) },
+                    label = {
+                        Text(
+                            row.name,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AisleHeader(number: Int, title: String, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = MaterialTheme.colorScheme.primary
+        ) {
+            Text(
+                "Reyon $number",
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 8.dp).weight(1f)
+        )
+        Text(
+            "$count ürün",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * Market modu: rafta telefonu tek elle kullanmak için büyük dokunma alanları.
+ * Satırın tamamı işaretler; küçük +/- düğmeleri yok.
+ */
+@Composable
+private fun MarketModeList(
+    pending: List<UiShoppingItem>,
+    purchased: List<UiShoppingItem>,
+    onToggle: (UiShoppingItem) -> Unit,
+    onComplete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 130.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Market modu",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            "${pending.size} alınacak · ${purchased.size} alındı · satıra dokun",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    TextButton(onClick = onComplete, enabled = pending.isNotEmpty()) {
+                        Text("Tamamla")
+                    }
+                }
+            }
+        }
+
+        items(pending, key = { "market-${it.listItem.id}" }) { item ->
+            MarketModeRow(item = item, checked = false, onToggle = { onToggle(item) })
+        }
+
+        if (purchased.isNotEmpty()) {
+            item {
+                Text(
+                    "Alınanlar (${purchased.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 6.dp, top = 10.dp)
+                )
+            }
+            items(purchased, key = { "market-${it.listItem.id}" }) { item ->
+                MarketModeRow(item = item, checked = true, onToggle = { onToggle(item) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun MarketModeRow(item: UiShoppingItem, checked: Boolean, onToggle: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 78.dp)
+            .clickable(onClick = onToggle),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (checked) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (checked) 0.dp else 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(checked = checked, onCheckedChange = { onToggle() })
+            Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
+                Text(
+                    item.product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (checked) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "${quantity(item.listItem.quantity)} ${item.product.unit}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    item.store?.let {
+                        Text(
+                            it.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = parseColor(it.colorHex)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun shareList(context: Context, state: ShoppingUiState) {
+    val lines = state.pendingItems.map { entry ->
+        ShareLine(
+            name = entry.product.name,
+            quantity = entry.listItem.quantity,
+            unit = entry.product.unit,
+            storeName = entry.store?.name,
+            purchased = entry.listItem.isPurchased
+        )
+    }
+    val title = state.selectedStore?.let { "Alışveriş listesi · ${it.name}" } ?: "Alışveriş listesi"
+    val text = ListShare.text(lines = lines, title = title)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Listeyi paylaş"))
 }
 
 private fun parseColor(hex: String): Color =

@@ -1,4 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Einkauf</string>
+
+    <!-- Alt menü -->
+    <string name="nav_list">Liste</string>
+    <string name="nav_pantry">Kiler</string>
+    <string name="nav_offers">Prospekt</string>
+    <string name="nav_flyer_list">Fırsatlar</string>
+    <string name="nav_money">Cebim</string>
+    <string name="nav_pfand">Pfand</string>
+
+    <!-- Ekran başlıkları -->
+    <string name="title_backup">Yedekleme ve ayarlar</string>
+    <string name="title_pantry">Kiler</string>
+    <string name="title_stats">İstatistikler</string>
+
+    <!-- Ortak düğmeler -->
+    <string name="action_back">Geri</string>
+    <string name="action_cancel">Vazgeç</string>
+    <string name="action_ok">Tamam</string>
+    <string name="action_share">Paylaş</string>
+    <string name="action_retry">Yeniden dene</string>
+
+    <!-- Ana ekran widget'ı -->
+    <string name="widget_title">Einkauf · alışveriş listesi</string>
+    <string name="widget_loading">Liste yükleniyor…</string>
+    <string name="widget_scan">Barkod tara</string>
+    <string name="widget_open">Listeyi aç</string>
+    <string name="widget_description">Alınacak ürün sayısı ve hızlı barkod tarama kısayolu</string>
 </resources>

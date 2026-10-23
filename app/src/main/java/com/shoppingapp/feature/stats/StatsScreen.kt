@@ -1,22 +1,64 @@
 package com.shoppingapp.feature.stats
 
-import androidx.compose.foundation.layout.*
+import android.graphics.Paint
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +72,7 @@ fun StatsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("İstatistikler & Pfand", fontWeight = FontWeight.Bold) },
+                title = { Text("İstatistikler", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Geri")
@@ -39,38 +81,321 @@ fun StatsScreen(
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatCard(
-                title = "Toplam Harcama (Geçmiş)",
-                value = euro(statsState.totalSpending),
-                subtitle = "Tamamlanan alışveriş harcamalarınız",
-                icon = Icons.Default.ShoppingCart,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            item {
+                StatCard(
+                    title = "Toplam Harcama (Geçmiş)",
+                    value = euro(statsState.totalSpending),
+                    subtitle = "${statsState.purchaseCount} alışveriş kayıtlı",
+                    icon = Icons.Default.ShoppingCart,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            item {
+                StatCard(
+                    title = "Toplam İade Edilebilir Pfand",
+                    value = euro(statsState.pfandTotal),
+                    subtitle = "${statsState.pfandUnits} adet iade bekliyor",
+                    icon = Icons.Default.Refresh,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+            item {
+                StatCard(
+                    title = "Aktif Ürün Sayısı",
+                    value = "${statsState.activeItemCount} Ürün",
+                    subtitle = "${statsState.purchasedItemCount} ürün önceden alındı",
+                    icon = Icons.Default.Star,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
 
-            StatCard(
-                title = "Toplam İade Edilebilir Pfand",
-                value = euro(statsState.pfandTotal),
-                subtitle = "${statsState.pfandUnits} adet iade bekliyor",
-                icon = Icons.Default.Refresh,
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-            )
+            if (!statsState.hasHistory) {
+                item { EmptyHistoryNotice() }
+            } else {
+                item { SpendingChartCard(statsState) }
+                if (statsState.categories.isNotEmpty()) {
+                    item { CategoryCard(statsState.categories) }
+                }
+                if (statsState.stores.isNotEmpty()) {
+                    item { StoreCard(statsState) }
+                }
+                if (statsState.trends.isNotEmpty()) {
+                    item { PriceTrendCard(statsState.trends) }
+                }
+            }
+        }
+    }
+}
 
-            StatCard(
-                title = "Aktif Ürün Sayısı",
-                value = "${statsState.activeItemCount} Ürün",
-                subtitle = "${statsState.purchasedItemCount} ürün önceden alındı",
-                icon = Icons.Default.Star,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SpendingChartCard(state: StatsUiState) {
+    var monthly by remember { mutableStateOf(false) }
+    val periods = if (monthly) state.monthly else state.weekly
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Harcama grafiği", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (monthly) "Son ${periods.size} ay" else "Son ${periods.size} hafta",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                FilterChip(
+                    selected = !monthly,
+                    onClick = { monthly = false },
+                    label = { Text("Hafta") }
+                )
+                Spacer(Modifier.width(6.dp))
+                FilterChip(
+                    selected = monthly,
+                    onClick = { monthly = true },
+                    label = { Text("Ay") }
+                )
+            }
+            SpendBarChart(periods = periods, modifier = Modifier.padding(top = 12.dp))
+        }
+    }
+}
+
+/** Compose Canvas ile çizilen basit sütun grafiği: ek kütüphane gerektirmez. */
+@Composable
+fun SpendBarChart(periods: List<PeriodSpend>, modifier: Modifier = Modifier) {
+    if (periods.isEmpty()) return
+    val barColor = MaterialTheme.colorScheme.primary
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val valueColor = MaterialTheme.colorScheme.onSurface
+    val max = periods.maxOf { it.total }.coerceAtLeast(0.01)
+
+    Canvas(modifier = modifier.fillMaxWidth().height(178.dp)) {
+        val labelHeight = 20.dp.toPx()
+        val valueSpace = 16.dp.toPx()
+        val chartHeight = size.height - labelHeight - valueSpace
+        val slot = size.width / periods.size
+        val barWidth = (slot * 0.52f).coerceAtMost(38.dp.toPx())
+        val paint = Paint().apply {
+            isAntiAlias = true
+            textSize = 10.sp.toPx()
+            textAlign = Paint.Align.CENTER
+        }
+
+        periods.forEachIndexed { index, period ->
+            val centerX = slot * index + slot / 2f
+            val barHeight = (period.total / max).toFloat().coerceIn(0f, 1f) * chartHeight
+
+            drawRoundRect(
+                color = trackColor.copy(alpha = 0.45f),
+                topLeft = Offset(centerX - barWidth / 2f, valueSpace),
+                size = Size(barWidth, chartHeight),
+                cornerRadius = CornerRadius(barWidth / 2f)
+            )
+            if (barHeight > 0f) {
+                drawRoundRect(
+                    color = barColor,
+                    topLeft = Offset(centerX - barWidth / 2f, valueSpace + chartHeight - barHeight),
+                    size = Size(barWidth, barHeight),
+                    cornerRadius = CornerRadius(barWidth / 2f)
+                )
+                paint.color = valueColor.toArgb()
+                drawContext.canvas.nativeCanvas.drawText(
+                    String.format(Locale.GERMANY, "%.0f", period.total),
+                    centerX,
+                    (valueSpace + chartHeight - barHeight - 4.dp.toPx()).coerceAtLeast(10.sp.toPx()),
+                    paint
+                )
+            }
+            paint.color = labelColor.toArgb()
+            drawContext.canvas.nativeCanvas.drawText(
+                period.label,
+                centerX,
+                size.height - 4.dp.toPx(),
+                paint
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryCard(categories: List<CategorySlice>) {
+    AnalyticsCard(title = "Kategori dağılımı", hint = "Geçmiş alışverişlere göre") {
+        categories.take(6).forEach { category ->
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        category.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "€${amount(category.total)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "  %${(category.share * 100).toInt()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = category.share.toFloat().coerceIn(0f, 1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoreCard(state: StatsUiState) {
+    AnalyticsCard(title = "Market karşılaştırması", hint = "Ortalama sepet tutarı") {
+        state.stores.forEach { store ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(parseColor(store.colorHex))
+                )
+                Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                    Text(store.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                    Text(
+                        "${store.visits} alışveriş · €${amount(store.total)} toplam",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "€${amount(store.averageBasket)}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (state.cheapestBasket?.storeId == store.storeId) {
+                        Text(
+                            "en düşük sepet",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PriceTrendCard(trends: List<PriceTrend>) {
+    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.GERMANY) }
+    AnalyticsCard(title = "Fiyat trendi", hint = "Son iki alışveriş karşılaştırması") {
+        trends.forEach { trend ->
+            val change = trend.change
+            val up = (change ?: 0.0) > 0.0
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        trend.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 2
+                    )
+                    Text(
+                        buildString {
+                            append("son €${amount(trend.lastPrice)}")
+                            trend.previousPrice?.let { append(" · önceki €${amount(it)}") }
+                            append(" · ${dateFormat.format(Date(trend.lastPurchaseAt))}")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (change != null) {
+                    Icon(
+                        if (up) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = if (up) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        trend.changePercent?.let { String.format(Locale.GERMANY, "%+.0f%%", it) } ?: "",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (up) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnalyticsCard(
+    title: String,
+    hint: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+private fun EmptyHistoryNotice() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Grafikler için henüz veri yok", fontWeight = FontWeight.Bold)
+            Text(
+                "İlk alışverişini \"Alışverişi tamamla\" ile bitirince haftalık harcama, " +
+                    "kategori dağılımı ve fiyat trendi burada oluşur.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -82,8 +407,8 @@ fun StatCard(
     value: String,
     subtitle: String,
     icon: ImageVector,
-    containerColor: androidx.compose.ui.graphics.Color,
-    contentColor: androidx.compose.ui.graphics.Color
+    containerColor: Color,
+    contentColor: Color
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -91,34 +416,20 @@ fun StatCard(
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
+            modifier = Modifier.fillMaxWidth().padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(48.dp)
-                    .padding(end = 16.dp),
+                modifier = Modifier.size(48.dp).padding(end = 16.dp),
                 tint = contentColor
             )
-
             Column {
+                Text(title, style = MaterialTheme.typography.labelMedium, color = contentColor.copy(alpha = 0.8f))
+                Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = contentColor)
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = contentColor.copy(alpha = 0.8f)
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor
-                )
-                Text(
-                    text = subtitle,
+                    subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = contentColor.copy(alpha = 0.7f),
                     modifier = Modifier.padding(top = 4.dp)
@@ -128,4 +439,10 @@ fun StatCard(
     }
 }
 
+private fun parseColor(hex: String): Color =
+    runCatching { Color(android.graphics.Color.parseColor(hex)) }
+        .getOrDefault(Color(0xFF047857))
+
 private fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+
+private fun amount(value: Double): String = String.format(Locale.GERMANY, "%.2f", value)
