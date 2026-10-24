@@ -78,6 +78,9 @@ import com.shoppingapp.ui.components.ProductThumb
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.shoppingapp.data.model.Store
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -299,6 +302,22 @@ fun BarcodeScannerScreen(
                                             style = MaterialTheme.typography.titleMedium,
                                             maxLines = 2
                                         )
+                                        pending.lastPrice?.let { last ->
+                                            val date = remember(last.purchaseDate) {
+                                                SimpleDateFormat("d MMM", Locale.GERMANY)
+                                                    .format(Date(last.purchaseDate))
+                                            }
+                                            Text(
+                                                text = buildString {
+                                                    append("Son: €")
+                                                    append(String.format(Locale.GERMANY, "%.2f", last.priceEuro))
+                                                    last.storeName?.let { append(" · $it") }
+                                                    append(" · $date")
+                                                },
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
                                         Text(
                                             text = "Hangi marketten aldın?",
                                             color = Color(0xFF6EE7B7),

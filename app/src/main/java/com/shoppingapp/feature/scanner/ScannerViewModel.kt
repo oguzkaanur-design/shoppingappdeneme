@@ -3,6 +3,7 @@ package com.shoppingapp.feature.scanner
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shoppingapp.data.model.LastPriceRow
 import com.shoppingapp.data.model.Product
 import com.shoppingapp.data.model.Store
 import com.shoppingapp.data.repository.ProductLookupRepository
@@ -18,7 +19,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** Barkod okundu, ürün bulundu; kullanıcı hangi marketten aldığını seçecek. */
-data class PendingScan(val product: Product, val barcode: String)
+data class PendingScan(
+    val product: Product,
+    val barcode: String,
+    /** Aynı ürüne en son ödenen fiyat; geçmiş yoksa null. */
+    val lastPrice: LastPriceRow? = null
+)
 
 /** Listeye eklenen son tarama. */
 data class AddedScan(val product: Product, val storeId: Long)
@@ -60,12 +66,17 @@ class ScannerViewModel @Inject constructor(
 
         viewModelScope.launch {
             runCatching {
-                lookupRepository.findOrCreate(value)
-            }.onSuccess { product ->
+                val product = lookupRepository.findOrCreate(value)
+                product to shoppingRepository.lastPriceFor(product.id)
+            }.onSuccess { (product, lastPrice) ->
                 _state.update {
                     it.copy(
                         isLookingUp = false,
-                        pending = PendingScan(product = product, barcode = value),
+                        pending = PendingScan(
+                            product = product,
+                            barcode = value,
+                            lastPrice = lastPrice
+                        ),
                         error = null
                     )
                 }

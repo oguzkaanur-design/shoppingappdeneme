@@ -54,6 +54,7 @@ fun ShoppingScreen(
     onNavigateToStats: () -> Unit,
     onNavigateToScanner: () -> Unit,
     onNavigateToBackup: () -> Unit = {},
+    onNavigateToReceipt: () -> Unit = {},
     viewModel: ShoppingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -147,6 +148,14 @@ fun ShoppingScreen(
                                 onClick = {
                                     showMenu = false
                                     shareList(context, uiState)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Fişle tamamla") },
+                                leadingIcon = { Icon(Icons.Default.ReceiptLong, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    onNavigateToReceipt()
                                 }
                             )
                             DropdownMenuItem(

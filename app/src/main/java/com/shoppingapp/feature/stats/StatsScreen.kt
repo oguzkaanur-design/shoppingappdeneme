@@ -19,13 +19,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,8 +37,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -54,6 +59,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -95,6 +101,9 @@ fun StatsScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+            }
+            item {
+                BudgetCard(state = statsState, onSave = viewModel::setMonthlyLimit)
             }
             item {
                 StatCard(
@@ -437,6 +446,138 @@ fun StatCard(
             }
         }
     }
+}
+
+/**
+ * Aylık bütçe kartı: bu ayın harcaması, limit ve kalan tutar. Limit yoksa
+ * kart kullanıcıyı tek dokunuşla limit belirlemeye yönlendirir.
+ */
+@Composable
+private fun BudgetCard(state: StatsUiState, onSave: (Double) -> Unit) {
+    var showDialog by remember { mutableStateOf(false) }
+    val overBudget = state.hasBudget && state.budgetRemaining < 0.0
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Aylık bütçe", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (state.hasBudget) {
+                            "${euro(state.monthSpending)} / ${euro(state.monthlyLimit)} · bu ay"
+                        } else {
+                            "Bu ay ${euro(state.monthSpending)} harcandı"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = { showDialog = true }) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Bütçeyi düzenle",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            if (state.hasBudget) {
+                LinearProgressIndicator(
+                    progress = state.budgetProgress,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = if (overBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+                Text(
+                    if (overBudget) {
+                        "${euro(-state.budgetRemaining)} bütçeyi aştın"
+                    } else {
+                        "${euro(state.budgetRemaining)} kaldı"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (overBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            } else {
+                Text(
+                    "Aylık limit koy: harcama bu kartta ilerleme olarak görünür.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+    }
+
+    if (showDialog) {
+        BudgetDialog(
+            current = state.monthlyLimit,
+            onDismiss = { showDialog = false },
+            onSave = { value ->
+                onSave(value)
+                showDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun BudgetDialog(current: Double, onDismiss: () -> Unit, onSave: (Double) -> Unit) {
+    var text by remember {
+        mutableStateOf(
+            if (current > 0.0) {
+                if (current % 1.0 == 0.0) current.toInt().toString()
+                else String.format(Locale.GERMANY, "%.2f", current).replace('.', ',')
+            } else {
+                ""
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Aylık bütçe", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { value ->
+                        text = value.filter { it.isDigit() || it == ',' || it == '.' }
+                    },
+                    label = { Text("Limit (€)") },
+                    placeholder = { Text("örn. 250") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                )
+                Text(
+                    "Boş bırakıp kaydedersen bütçe takibi kapanır.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(text.replace(',', '.').toDoubleOrNull() ?: 0.0)
+                }
+            ) { Text("Kaydet") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Vazgeç") }
+        }
+    )
 }
 
 private fun parseColor(hex: String): Color =

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class CategorySlice(
@@ -43,15 +44,26 @@ data class StatsUiState(
     val categories: List<CategorySlice> = emptyList(),
     val stores: List<StoreSlice> = emptyList(),
     val trends: List<PriceTrend> = emptyList(),
-    val purchaseCount: Int = 0
+    val purchaseCount: Int = 0,
+    val monthSpending: Double = 0.0,
+    val monthlyLimit: Double = 0.0
 ) {
     val hasHistory: Boolean get() = purchaseCount > 0 && totalSpending > 0.0
     val cheapestBasket: StoreSlice? get() = stores.minByOrNull { it.averageBasket }
+
+    val hasBudget: Boolean get() = monthlyLimit > 0.0
+
+    /** Bütçe aşıldıysa negatif: "kalan" göstergesi kırmızıya döner. */
+    val budgetRemaining: Double get() = monthlyLimit - monthSpending
+
+    val budgetProgress: Float
+        get() = if (monthlyLimit <= 0.0) 0f else (monthSpending / monthlyLimit).toFloat().coerceIn(0f, 1f)
 }
 
 @HiltViewModel
 class StatsViewModel @Inject constructor(
-    private val repository: ShoppingRepository
+    private val repository: ShoppingRepository,
+    private val budgetStore: BudgetStore
 ) : ViewModel() {
 
     private data class Core(
@@ -76,8 +88,9 @@ class StatsViewModel @Inject constructor(
             repository.historyLines,
             repository.allCategories,
             repository.allStores
-        ) { lines, categories, stores -> Extra(lines, categories, stores) }
-    ) { core, extra ->
+        ) { lines, categories, stores -> Extra(lines, categories, stores) },
+        budgetStore.monthlyLimit
+    ) { core, extra, monthlyLimit ->
         val categoryMap = extra.categories.associateBy { it.id }
         val storeMap = extra.stores.associateBy { it.id }
 
@@ -115,11 +128,18 @@ class StatsViewModel @Inject constructor(
             categories = categorySlices,
             stores = storeSlices,
             trends = SpendingAnalytics.priceTrends(extra.lines),
-            purchaseCount = core.history.size
+            purchaseCount = core.history.size,
+            monthSpending = SpendingAnalytics.currentMonthTotal(extra.lines),
+            monthlyLimit = monthlyLimit
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = StatsUiState()
     )
+
+    /** 0 → bütçe takibi kapatılır. */
+    fun setMonthlyLimit(value: Double) {
+        viewModelScope.launch { budgetStore.setMonthlyLimit(value) }
+    }
 }

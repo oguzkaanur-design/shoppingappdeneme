@@ -37,6 +37,16 @@ data class PendingPreviewRow(
     val unit: String
 )
 
+/**
+ * Bir ürün için en son ödenen birim fiyat. Barkod okutulduğunda "geçen sefer ne
+ * ödemiştim?" sorusunu cevaplar; fiyat değişimini markete gitmeden gösterir.
+ */
+data class LastPriceRow(
+    val priceEuro: Double,
+    val purchaseDate: Long,
+    val storeName: String?
+)
+
 /** Kiler satırı: stok kaydı ile ürün bilgisinin birleşimi. */
 data class PantryRow(
     val id: Long,

@@ -37,7 +37,10 @@ import com.shoppingapp.feature.offers.FlyerListScreen
 import com.shoppingapp.feature.offers.FlyerListViewModel
 import com.shoppingapp.feature.offers.OffersScreen
 import com.shoppingapp.feature.pantry.PantryScreen
+import com.shoppingapp.feature.receipt.ReceiptScreen
 import com.shoppingapp.feature.scanner.BarcodeScannerScreen
+import com.shoppingapp.feature.share.SharedListImportDialog
+import com.shoppingapp.feature.share.ShareImportViewModel
 import com.shoppingapp.feature.stats.PfandScreen
 import com.shoppingapp.feature.stats.StatsScreen
 
@@ -57,7 +60,9 @@ private val bottomItems = listOf(
 @Composable
 fun AppNavigation(
     routeRequest: String? = null,
-    onRouteHandled: () -> Unit = {}
+    onRouteHandled: () -> Unit = {},
+    sharedText: String? = null,
+    onSharedTextHandled: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -65,6 +70,28 @@ fun AppNavigation(
     val isScanner = currentRoute == "scanner"
     val flyerListViewModel: FlyerListViewModel = hiltViewModel()
     val flyerCount by flyerListViewModel.count.collectAsState()
+    val shareImportViewModel: ShareImportViewModel = hiltViewModel()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    if (sharedText != null) {
+        SharedListImportDialog(
+            text = sharedText,
+            onDismiss = onSharedTextHandled,
+            onConfirm = { lines ->
+                shareImportViewModel.import(lines) { added ->
+                    onSharedTextHandled()
+                    if (added > 0) {
+                        navController.navigateTopLevel("home")
+                        android.widget.Toast.makeText(
+                            context,
+                            "$added ürün listeye eklendi",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        )
+    }
 
     // Bildirim ve widget kısayolları: istek bir kez tüketilir.
     LaunchedEffect(routeRequest) {
@@ -110,7 +137,8 @@ fun AppNavigation(
                 ShoppingScreen(
                     onNavigateToStats = { navController.navigateTopLevel("stats") },
                     onNavigateToScanner = { navController.navigate("scanner") },
-                    onNavigateToBackup = { navController.navigate("backup") }
+                    onNavigateToBackup = { navController.navigate("backup") },
+                    onNavigateToReceipt = { navController.navigate("receipt") }
                 )
             }
             composable("pantry") { PantryScreen() }
@@ -128,6 +156,9 @@ fun AppNavigation(
             }
             composable("scanner") {
                 BarcodeScannerScreen(onClose = { navController.popBackStack() })
+            }
+            composable("receipt") {
+                ReceiptScreen(onClose = { navController.popBackStack() })
             }
         }
     }

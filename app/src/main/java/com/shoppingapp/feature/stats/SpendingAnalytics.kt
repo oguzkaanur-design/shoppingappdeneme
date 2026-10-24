@@ -63,6 +63,22 @@ object SpendingAnalytics {
     fun total(lines: List<PurchaseHistoryLine>): Double =
         lines.sumOf { it.priceEuro * it.quantity }
 
+    /** İçinde bulunulan takvim ayında yapılan harcama (bütçe takibi için). */
+    fun currentMonthTotal(
+        lines: List<PurchaseHistoryLine>,
+        nowMillis: Long = System.currentTimeMillis(),
+        zone: ZoneId = ZoneId.systemDefault()
+    ): Double {
+        val now = Instant.ofEpochMilli(nowMillis).atZone(zone)
+        val month = YearMonth.of(now.year, now.month)
+        return lines
+            .filter {
+                val date = Instant.ofEpochMilli(it.purchaseDate).atZone(zone)
+                YearMonth.of(date.year, date.month) == month
+            }
+            .sumOf { it.priceEuro * it.quantity }
+    }
+
     /** Son [weeks] hafta, Pazartesi başlangıçlı, eskiden yeniye. */
     fun weekly(
         lines: List<PurchaseHistoryLine>,

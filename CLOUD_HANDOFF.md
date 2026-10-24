@@ -171,3 +171,18 @@ Notlar:
   Aldi Süd reyon başlığı, market modu, alışveriş tamamlama (€3,09) → kiler stoğu 1→2, sık alınanlar,
   son alışverişi tekrarla, yerel yedek alma/geri yükleme (JSON içeriği doğrulandı), Prospekt
   yükleme + önbellek dosyası, bildirim kanalı ve WorkManager işi kontrol edildi.
+
+## v2.1: fiş OCR, paylaşım içe aktarma, bütçe, barkod fiyat hafızası + güvenlik
+- `feature/receipt`: ML Kit OCR (Play Services modeli), `ReceiptTextLayout` iki sütunlu
+  fiş satırlarını konuma göre birleştirir, `ReceiptParser` tutar/ürün ayıklar.
+  Fiş kaydı `ShoppingRepository.completePurchaseFromReceipt` üzerinden normal
+  tamamlama akışını kullanır (geçmiş, fiyat, kiler stoğu).
+- `feature/share/ListImport`: paylaşılan metni satırlara ayırır (madde işareti,
+  "2 kg un", "3x Milch", virgüllü tek satır). `ACTION_SEND` + önizleme diyaloğu.
+- `feature/stats/BudgetStore`: aylık limit DataStore'da; kart + düzenleme diyaloğu.
+- Barkod: `ShoppingDao.getLastPriceForProduct` → tarayıcıda "Son: €… · Market · tarih".
+- Güvenlik: `security/AppIntegrity` imza özeti kontrolü (sürümde farklı imza → ekran
+  kilitli), R8 + kaynak küçültme, `allowBackup=false` + extraction rules, cleartext
+  kapalı, Log.d/v/i sürümden çıkarılıyor.
+- APK 22 MB; 117 birim testi geçiyor.
+- Sıradaki iş: arayüz metinlerini `strings.xml`'e taşıyıp çok dillilik (EN/DE/BG/SR/ZH).

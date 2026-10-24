@@ -123,6 +123,17 @@ interface ShoppingDao {
     @Query("SELECT * FROM purchase_history ORDER BY purchaseDate DESC LIMIT 1")
     suspend fun getLastPurchaseOnce(): PurchaseHistory?
 
+    /** Ürün için en son ödenen birim fiyat (fiyatı girilmemiş satırlar atlanır). */
+    @Query(
+        "SELECT phi.priceEuro AS priceEuro, ph.purchaseDate AS purchaseDate, s.name AS storeName " +
+            "FROM purchase_history_items phi " +
+            "INNER JOIN purchase_history ph ON ph.id = phi.historyId " +
+            "LEFT JOIN stores s ON s.id = ph.storeId " +
+            "WHERE phi.productId = :productId AND phi.priceEuro > 0 " +
+            "ORDER BY ph.purchaseDate DESC, phi.id DESC LIMIT 1"
+    )
+    suspend fun getLastPriceForProduct(productId: Long): LastPriceRow?
+
     @Query("SELECT * FROM purchase_history_items WHERE historyId = :historyId ORDER BY id ASC")
     suspend fun getHistoryItemsOnce(historyId: Long): List<PurchaseHistoryItem>
 

@@ -35,8 +35,8 @@ android {
         // Her yeni sürümde versionCode'u ARTIR (telefon "güncelleme" olarak algılar, veriler kalır).
         // CI / telefondan tetiklenen derlemelerde kod düzenlemeden üzerine yazılabilir:
         //   ./gradlew :app:assembleRelease -PversionCode=6 -PversionName=1.5
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 11
-        versionName = (findProperty("versionName") as String?) ?: "2.0"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 12
+        versionName = (findProperty("versionName") as String?) ?: "2.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -58,7 +58,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8: kodu karıştırır (kopyalanmayı zorlaştırır) ve kullanılmayan kodu atar.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -81,6 +83,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"
@@ -119,6 +122,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.0")
     implementation("androidx.camera:camera-view:1.3.0")
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    // Fiş OCR'ı: model cihazda değil Play Services üzerinden gelir (APK ~30 MB küçülür).
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
 
     // Retrofit Network
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

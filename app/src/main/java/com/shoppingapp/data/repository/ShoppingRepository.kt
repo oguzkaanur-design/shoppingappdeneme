@@ -3,6 +3,8 @@ package com.shoppingapp.data.repository
 import com.shoppingapp.data.catalog.BrandCatalog
 import com.shoppingapp.data.dao.ShoppingDao
 import com.shoppingapp.data.model.*
+import com.shoppingapp.feature.receipt.ReceiptLine
+import com.shoppingapp.feature.share.ImportedLine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -165,6 +167,44 @@ class ShoppingRepository @Inject constructor(
             )
         )
     }
+
+    /**
+     * Paylaşılan metinden çıkarılan satırları listeye ekler. Aynı adla kayıtlı ürün
+     * yeniden oluşturulmaz; ürün yoksa adından kategori tahmin edilerek açılır.
+     * @return listeye eklenen satır sayısı.
+     */
+    suspend fun importLines(lines: List<ImportedLine>): Int {
+        var added = 0
+        lines.forEach { line ->
+            val name = line.name.trim()
+            if (name.isBlank()) return@forEach
+            val productId = shoppingDao.findProductByName(name)?.id
+                ?: shoppingDao.insertProduct(
+                    Product(
+                        name = name,
+                        barcode = "IMPORT_${System.currentTimeMillis()}_$added",
+                        categoryId = BrandCatalog.detectCategory(name) ?: 0L,
+                        unit = line.unit,
+                        priceEuro = 0.0
+                    )
+                )
+            shoppingDao.insertListItem(
+                ListItem(
+                    productId = productId,
+                    storeId = 0L,
+                    quantity = line.quantity.coerceAtLeast(0.1),
+                    isPurchased = false,
+                    addedAt = System.currentTimeMillis() + added
+                )
+            )
+            added++
+        }
+        return added
+    }
+
+    /** Barkod okutulan ürün için en son ödenen fiyatı getirir (yoksa null). */
+    suspend fun lastPriceFor(productId: Long): LastPriceRow? =
+        shoppingDao.getLastPriceForProduct(productId)
 
     suspend fun updateListItem(item: ListItem) = shoppingDao.updateListItem(item)
 
@@ -363,6 +403,38 @@ class ShoppingRepository @Inject constructor(
             itemCount = lines.sumOf { it.quantity }.toInt(),
             storeName = storeName
         )
+    }
+
+    /**
+     * Fiş fotoğrafından okunan satırları tek alışveriş olarak kaydeder. Fişteki ürün
+     * adı daha önce kayıtlıysa o ürün kullanılır; yoksa adından kategori tahmin edilerek
+     * yeni ürün açılır. Liste, normal "alışverişi tamamla" akışındaki gibi boşaltılır.
+     */
+    suspend fun completePurchaseFromReceipt(
+        lines: List<ReceiptLine>,
+        storeId: Long
+    ): PurchaseReceipt {
+        val purchaseLines = lines.mapIndexed { index, line ->
+            val productId = shoppingDao.findProductByName(line.name)?.id
+                ?: shoppingDao.insertProduct(
+                    Product(
+                        name = line.name,
+                        barcode = "RECEIPT_${System.currentTimeMillis()}_$index",
+                        categoryId = BrandCatalog.detectCategory(line.name) ?: 0L,
+                        unit = "Adet",
+                        defaultStoreId = storeId.takeIf { it > 0L },
+                        priceEuro = line.unitPrice
+                    )
+                )
+            PurchaseLine(
+                listItemId = 0L,
+                productId = productId,
+                quantity = line.quantity,
+                unitPrice = line.unitPrice,
+                pfandPerUnit = 0.0
+            )
+        }
+        return completePurchase(purchaseLines, storeId)
     }
 
     // ---- Pfand ----
