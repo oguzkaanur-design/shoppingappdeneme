@@ -35,7 +35,7 @@ class MigrationTest {
     private val context: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private val allTestDbs = listOf(DB_FROM_V5, DB_FROM_V3, DB_FROM_V2, DB_UNKNOWN_VERSION)
+    private val allTestDbs = listOf(DB_FROM_V6, DB_FROM_V5, DB_FROM_V3, DB_FROM_V2, DB_UNKNOWN_VERSION)
 
     @After
     fun tearDown() {
@@ -142,6 +142,75 @@ class MigrationTest {
                 )
                 assertTrue("Cebim tablosuna yazılabilmeli", id > 0)
                 assertEquals(1, dao.getMoneyEntries().first().size)
+            }
+        } finally {
+            database.close()
+        }
+    }
+
+    /**
+     * v6'dan yükseltme: indeksler eklenir, tüm tablolardaki kullanıcı verisi yerinde kalır.
+     */
+    @Test
+    fun v6danV7yeGecisVeriyiKorurVeIndeksleriEkler() {
+        deleteDatabase(DB_FROM_V6)
+
+        helper.createDatabase(DB_FROM_V6, 6).use { db ->
+            db.execSQL(
+                "INSERT INTO categories (id, nameDe, nameTr, iconName, colorHex) " +
+                    "VALUES (1, 'Obst', 'Meyve', 'apple', '#FF0000')"
+            )
+            db.execSQL(
+                "INSERT INTO stores (id, name, colorHex, aisleOrderJson) " +
+                    "VALUES (1, 'Rewe', '#00FF00', '[]')"
+            )
+            db.execSQL(
+                "INSERT INTO products (id, name, barcode, categoryId, imageUrl, unit, defaultStoreId, pfandAmount, priceEuro) " +
+                    "VALUES (1, 'Milch', '4001234567890', 1, NULL, 'L', 1, 0.25, 1.19)"
+            )
+            db.execSQL(
+                "INSERT INTO list_items (id, productId, storeId, quantity, isPurchased, addedAt) " +
+                    "VALUES (1, 1, 1, 2.0, 0, 1234)"
+            )
+            db.execSQL(
+                "INSERT INTO pantry_items (id, productId, currentQuantity, minThreshold, expiryDate) " +
+                    "VALUES (1, 1, 3.0, 1.0, NULL)"
+            )
+            db.execSQL(
+                "INSERT INTO purchase_history (id, storeId, totalAmount, pfandTotal, purchaseDate) " +
+                    "VALUES (1, 1, 2.38, 0.0, 5000)"
+            )
+            db.execSQL(
+                "INSERT INTO purchase_history_items (id, historyId, productId, priceEuro, quantity) " +
+                    "VALUES (1, 1, 1, 1.19, 2.0)"
+            )
+            db.execSQL(
+                "INSERT INTO pfand_entries (id, label, unitAmount, quantity, createdAt, isReturned) " +
+                    "VALUES (1, 'Flaschen', 0.25, 4, 555, 0)"
+            )
+            db.execSQL(
+                "INSERT INTO money_entries (id, account, amount, note, createdAt) " +
+                    "VALUES (1, 'CASH', 12.5, 'harçlık', 999)"
+            )
+            db.execSQL(
+                "INSERT INTO flyer_list_items (id, offerId, storeName, storeColor, productName, description, " +
+                    "unitPrice, quantity, imagePath, validFromEpochMs, validToEpochMs, addedAt) " +
+                    "VALUES (1, 42, 'PENNY', 1, 'Kaffee', '', 3.99, 1, NULL, 100, 200, 150)"
+            )
+        }
+
+        // Şema doğrulaması indeksleri de kapsar; veri korunumu aşağıda ayrıca okunur.
+        helper.runMigrationsAndValidate(DB_FROM_V6, 7, true, AppMigrations.MIGRATION_6_7)
+
+        val database = DatabaseModule.buildDatabase(context, DB_FROM_V6)
+        try {
+            val dao = database.shoppingDao()
+            runBlocking {
+                assertEquals("Ürün korunmalı", "Milch", dao.getProductByBarcode("4001234567890")?.name)
+                assertEquals("Liste satırı korunmalı", 1, dao.getActiveListItemsFlow().first().size)
+                assertEquals("Kiler korunmalı", 1, dao.getPantryRowsOnce().size)
+                assertEquals("Pfand korunmalı", 1, dao.getPendingPfand().first().size)
+                assertEquals("Cebim korunmalı", 1, dao.getMoneyEntries().first().size)
             }
         } finally {
             database.close()
@@ -278,6 +347,7 @@ class MigrationTest {
     }
 
     private companion object {
+        const val DB_FROM_V6 = "migration_from_v6.db"
         const val DB_FROM_V5 = "migration_from_v5.db"
         const val DB_FROM_V3 = "migration_from_v3.db"
         const val DB_FROM_V2 = "migration_from_v2.db"

@@ -3,6 +3,7 @@ package com.shoppingapp.feature.stats
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shoppingapp.data.model.PfandEntry
+import com.shoppingapp.data.pfand.PfandCashInResult
 import com.shoppingapp.data.repository.ShoppingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -50,10 +51,13 @@ class PfandViewModel @Inject constructor(
         }
     }
 
-    /** İadeyi tamamlar; bekleyen tutar Cebim'deki Nakit bakiyesine otomatik eklenir. */
-    fun returnAll() {
+    /**
+     * Kasadan alınan tutarı iade eder. Sonuç, diyaloğun canlı hesabıyla aynı
+     * planlayıcıdan gelir; [onResult] ana iş parçacığında çağrılır.
+     */
+    fun returnAmount(amountCents: Int, onResult: (PfandCashInResult) -> Unit = {}) {
         viewModelScope.launch {
-            repository.cashInAllPfand()
+            onResult(repository.cashInPfand(amountCents))
         }
     }
 

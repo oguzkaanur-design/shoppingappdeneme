@@ -1,7 +1,11 @@
 package com.shoppingapp.data.repository
 
+import com.shoppingapp.data.catalog.BrandCatalog
 import com.shoppingapp.data.dao.ShoppingDao
+import com.shoppingapp.data.local.SeedState
 import com.shoppingapp.data.model.*
+import com.shoppingapp.feature.receipt.ReceiptLine
+import com.shoppingapp.feature.share.ImportedLine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -31,7 +35,8 @@ data class ListItemWithDetails(
 
 @Singleton
 class ShoppingRepository @Inject constructor(
-    private val shoppingDao: ShoppingDao
+    private val shoppingDao: ShoppingDao,
+    private val seedState: SeedState
 ) {
     val allListItems: Flow<List<ListItem>> = shoppingDao.getAllListItems()
     val allProducts: Flow<List<Product>> = shoppingDao.getAllProducts()
@@ -42,17 +47,25 @@ class ShoppingRepository @Inject constructor(
     val pendingPfand: Flow<List<PfandEntry>> = shoppingDao.getPendingPfand()
     val returnedPfand: Flow<List<PfandEntry>> = shoppingDao.getReturnedPfand()
     val moneyEntries: Flow<List<MoneyEntry>> = shoppingDao.getMoneyEntries()
+    val pantryRows: Flow<List<PantryRow>> = shoppingDao.getPantryRows()
+    val historyLines: Flow<List<PurchaseHistoryLine>> = shoppingDao.getHistoryLines()
+    val frequentProducts: Flow<List<FrequentProductRow>> = shoppingDao.getFrequentProducts(12)
 
+    /**
+     * Reyon sırası kategori kimlikleriyle tutulur. Sıra markete göre gerçek
+     * gezinme düzenini yansıtır: manav/giriş, süt ürünleri, atıştırmalık,
+     * içecekler ve en arkadaki temizlik reyonu her markette aynı yerde değildir.
+     */
     private val defaultStores = listOf(
-        Store(id = 1, name = "Rewe", colorHex = "#E2001A", aisleOrderJson = "[]"),
-        Store(id = 2, name = "Edeka", colorHex = "#005CA9", aisleOrderJson = "[]"),
-        Store(id = 3, name = "Aldi Süd", colorHex = "#002B49", aisleOrderJson = "[]"),
-        Store(id = 4, name = "Lidl", colorHex = "#0050AA", aisleOrderJson = "[]"),
-        Store(id = 5, name = "Kaufland", colorHex = "#D00000", aisleOrderJson = "[]"),
-        Store(id = 6, name = "Penny", colorHex = "#E30613", aisleOrderJson = "[]"),
-        Store(id = 7, name = "Netto", colorHex = "#F2B705", aisleOrderJson = "[]"),
-        Store(id = 8, name = "dm", colorHex = "#0069B4", aisleOrderJson = "[]"),
-        Store(id = 9, name = "Rossmann", colorHex = "#D40511", aisleOrderJson = "[]")
+        Store(id = 1, name = "Rewe", colorHex = "#E2001A", aisleOrderJson = "[1,2,4,3,5]"),
+        Store(id = 2, name = "Edeka", colorHex = "#005CA9", aisleOrderJson = "[1,4,2,3,5]"),
+        Store(id = 3, name = "Aldi Süd", colorHex = "#002B49", aisleOrderJson = "[1,5,2,4,3]"),
+        Store(id = 4, name = "Lidl", colorHex = "#0050AA", aisleOrderJson = "[1,2,3,5,4]"),
+        Store(id = 5, name = "Kaufland", colorHex = "#D00000", aisleOrderJson = "[1,2,3,4,5]"),
+        Store(id = 6, name = "Penny", colorHex = "#E30613", aisleOrderJson = "[1,4,3,2,5]"),
+        Store(id = 7, name = "Netto", colorHex = "#F2B705", aisleOrderJson = "[1,2,3,5,4]"),
+        Store(id = 8, name = "dm", colorHex = "#0069B4", aisleOrderJson = "[5,4,2,1,3]"),
+        Store(id = 9, name = "Rossmann", colorHex = "#D40511", aisleOrderJson = "[5,4,2,3,1]")
     )
 
     private val defaultCategories = listOf(
@@ -89,6 +102,10 @@ class ShoppingRepository @Inject constructor(
     suspend fun initDefaultData() {
         seedConfig()
 
+        // Örnek veri yalnızca ilk kurulumda. "Tüm verileri sil" sonrası tekrar
+        // eklenmesin; aksi halde silme kalıcı olmaz.
+        if (seedState.isSeeded) return
+
         val products = shoppingDao.getAllProducts().first()
         if (products.isEmpty()) {
             sampleProducts.forEach { shoppingDao.insertProduct(it) }
@@ -120,6 +137,10 @@ class ShoppingRepository @Inject constructor(
                 shoppingDao.insertProduct(product.copy(imageUrl = null))
             }
         }
+
+        // Mevcut kurulumlarda ürünler dolu olabilir; yine de bayrağı kapat ki
+        // ileride veri silinirse demo liste geri gelmesin.
+        seedState.isSeeded = true
     }
 
     suspend fun addProduct(product: Product): Long = shoppingDao.insertProduct(product)
@@ -157,9 +178,179 @@ class ShoppingRepository @Inject constructor(
         )
     }
 
+    /**
+     * Paylaşılan metinden çıkarılan satırları listeye ekler. Aynı adla kayıtlı ürün
+     * yeniden oluşturulmaz; ürün yoksa adından kategori tahmin edilerek açılır.
+     * @return listeye eklenen satır sayısı.
+     */
+    suspend fun importLines(lines: List<ImportedLine>): Int {
+        var added = 0
+        lines.forEach { line ->
+            val name = line.name.trim()
+            if (name.isBlank()) return@forEach
+            val productId = shoppingDao.findProductByName(name)?.id
+                ?: shoppingDao.insertProduct(
+                    Product(
+                        name = name,
+                        barcode = "IMPORT_${System.currentTimeMillis()}_$added",
+                        categoryId = BrandCatalog.detectCategory(name) ?: 0L,
+                        unit = line.unit,
+                        priceEuro = 0.0
+                    )
+                )
+            shoppingDao.insertListItem(
+                ListItem(
+                    productId = productId,
+                    storeId = 0L,
+                    quantity = line.quantity.coerceAtLeast(0.1),
+                    isPurchased = false,
+                    addedAt = System.currentTimeMillis() + added
+                )
+            )
+            added++
+        }
+        return added
+    }
+
+    /** Barkod okutulan ürün için en son ödenen fiyatı getirir (yoksa null). */
+    suspend fun lastPriceFor(productId: Long): LastPriceRow? =
+        shoppingDao.getLastPriceForProduct(productId)
+
     suspend fun updateListItem(item: ListItem) = shoppingDao.updateListItem(item)
 
     suspend fun deleteListItem(item: ListItem) = shoppingDao.deleteListItem(item)
+
+    // ---- Kiler (Pantry) ----
+
+    /**
+     * Kilerde yeni bir ürün takibi başlatır. Aynı adla kayıtlı bir ürün varsa
+     * yeniden ürün açılmaz; stok o ürünün kaydına eklenir.
+     */
+    suspend fun addPantryItem(
+        name: String,
+        quantity: Double,
+        minThreshold: Double,
+        expiryDate: Long?,
+        unit: String = "Adet",
+        storeId: Long = 0L,
+        categoryId: Long = 0L,
+        priceEuro: Double = 0.0
+    ): Long? {
+        val cleanName = name.trim()
+        if (cleanName.isBlank() || quantity <= 0.0) return null
+
+        val productId = shoppingDao.findProductByName(cleanName)?.id
+            ?: Product(
+                name = cleanName,
+                barcode = "PANTRY_${System.currentTimeMillis()}",
+                categoryId = categoryId.takeIf { it > 0L }
+                    ?: BrandCatalog.detectCategory(cleanName)
+                    ?: 0L,
+                unit = unit.ifBlank { "Adet" },
+                defaultStoreId = storeId.takeIf { it > 0L },
+                priceEuro = priceEuro.coerceAtLeast(0.0)
+            ).let { shoppingDao.insertProduct(it) }
+
+        return addPantryItemForProduct(
+            productId = productId,
+            quantity = quantity,
+            minThreshold = minThreshold,
+            expiryDate = expiryDate
+        )
+    }
+
+    /** Var olan bir ürün için kilerde stok tutar; kayıt varsa adet eklenir. */
+    suspend fun addPantryItemForProduct(
+        productId: Long,
+        quantity: Double,
+        minThreshold: Double,
+        expiryDate: Long? = null
+    ): Long {
+        val existing = shoppingDao.getPantryItemForProduct(productId)
+        return if (existing != null) {
+            shoppingDao.insertPantryItem(
+                existing.copy(
+                    currentQuantity = existing.currentQuantity + quantity.coerceAtLeast(0.0),
+                    minThreshold = minThreshold.coerceAtLeast(0.0),
+                    expiryDate = expiryDate ?: existing.expiryDate
+                )
+            )
+        } else {
+            shoppingDao.insertPantryItem(
+                PantryItem(
+                    productId = productId,
+                    currentQuantity = quantity.coerceAtLeast(0.0),
+                    minThreshold = minThreshold.coerceAtLeast(0.0),
+                    expiryDate = expiryDate
+                )
+            )
+        }
+    }
+
+    suspend fun setPantryQuantity(id: Long, quantity: Double) =
+        shoppingDao.setPantryQuantity(id, quantity.coerceAtLeast(0.0))
+
+    suspend fun setPantryThreshold(item: PantryItem, threshold: Double) =
+        shoppingDao.insertPantryItem(item.copy(minThreshold = threshold.coerceAtLeast(0.0)))
+
+    suspend fun setPantryExpiry(item: PantryItem, expiryDate: Long?) =
+        shoppingDao.insertPantryItem(item.copy(expiryDate = expiryDate))
+
+    suspend fun deletePantryItem(item: PantryItem) = shoppingDao.deletePantryItem(item)
+
+    /** Kilerdeki eksik ürünü tek dokunuşla alışveriş listesine ekler. */
+    suspend fun addPantryRowToList(row: PantryRow, quantity: Double = 1.0) {
+        shoppingDao.insertListItem(
+            ListItem(
+                productId = row.productId,
+                storeId = row.defaultStoreId ?: 0L,
+                quantity = quantity.coerceAtLeast(1.0),
+                isPurchased = false,
+                addedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+    // ---- Hızlı ekleme ----
+
+    /** "Sık alınanlar" satırından listeye ekler. */
+    suspend fun addFrequentToList(row: FrequentProductRow, quantity: Double = 1.0) {
+        shoppingDao.insertListItem(
+            ListItem(
+                productId = row.productId,
+                storeId = row.defaultStoreId ?: 0L,
+                quantity = quantity.coerceAtLeast(1.0),
+                isPurchased = false,
+                addedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+    /**
+     * Son tamamlanan alışverişteki ürünleri aynı adetlerle listeye geri koyar.
+     * @return listeye eklenen satır sayısı.
+     */
+    suspend fun repeatLastPurchase(): Int {
+        val last = shoppingDao.getLastPurchaseOnce() ?: return 0
+        var added = 0
+        shoppingDao.getHistoryItemsOnce(last.id).forEach { line ->
+            val product = shoppingDao.getProductById(line.productId) ?: return@forEach
+            shoppingDao.insertListItem(
+                ListItem(
+                    productId = product.id,
+                    storeId = product.defaultStoreId ?: last.storeId,
+                    quantity = line.quantity.coerceAtLeast(1.0),
+                    isPurchased = false,
+                    addedAt = System.currentTimeMillis()
+                )
+            )
+            added++
+        }
+        return added
+    }
+
+    /** Son alışveriş varsa "tekrarla" kısayolu gösterilir. */
+    suspend fun hasPurchaseHistory(): Boolean = shoppingDao.getLastPurchaseOnce() != null
 
     suspend fun clearPurchasedItems() = shoppingDao.clearPurchasedItems()
 
@@ -206,6 +397,8 @@ class ShoppingRepository @Inject constructor(
             if (line.unitPrice > 0.0) {
                 shoppingDao.updateProductPrice(line.productId, line.unitPrice)
             }
+            // Kilerde takip edilen ürünün stoğu, satın alınan adet kadar artar.
+            shoppingDao.increasePantryQuantity(line.productId, line.quantity)
         }
 
         shoppingDao.clearAllListItems()
@@ -222,6 +415,38 @@ class ShoppingRepository @Inject constructor(
         )
     }
 
+    /**
+     * Fiş fotoğrafından okunan satırları tek alışveriş olarak kaydeder. Fişteki ürün
+     * adı daha önce kayıtlıysa o ürün kullanılır; yoksa adından kategori tahmin edilerek
+     * yeni ürün açılır. Liste, normal "alışverişi tamamla" akışındaki gibi boşaltılır.
+     */
+    suspend fun completePurchaseFromReceipt(
+        lines: List<ReceiptLine>,
+        storeId: Long
+    ): PurchaseReceipt {
+        val purchaseLines = lines.mapIndexed { index, line ->
+            val productId = shoppingDao.findProductByName(line.name)?.id
+                ?: shoppingDao.insertProduct(
+                    Product(
+                        name = line.name,
+                        barcode = "RECEIPT_${System.currentTimeMillis()}_$index",
+                        categoryId = BrandCatalog.detectCategory(line.name) ?: 0L,
+                        unit = "Adet",
+                        defaultStoreId = storeId.takeIf { it > 0L },
+                        priceEuro = line.unitPrice
+                    )
+                )
+            PurchaseLine(
+                listItemId = 0L,
+                productId = productId,
+                quantity = line.quantity,
+                unitPrice = line.unitPrice,
+                pfandPerUnit = 0.0
+            )
+        }
+        return completePurchase(purchaseLines, storeId)
+    }
+
     // ---- Pfand ----
 
     suspend fun addPfandEntry(label: String, unitAmount: Double, quantity: Int) {
@@ -232,6 +457,12 @@ class ShoppingRepository @Inject constructor(
     }
 
     suspend fun deletePfandEntry(entry: PfandEntry) = shoppingDao.deletePfandEntry(entry)
+
+    /**
+     * Kasadan alınan tutarı iade eder; yalnızca bu tutara denk gelen adetleri düşer.
+     * Sonuç, arayüzün canlı hesaplamasıyla aynı planlayıcıyı kullanır.
+     */
+    suspend fun cashInPfand(amountCents: Int) = shoppingDao.cashInPfand(amountCents)
 
     /**
      * Bekleyen tüm Pfand'ı iade alındı yapar ve toplam tutarı nakit bakiyesine aktarır.

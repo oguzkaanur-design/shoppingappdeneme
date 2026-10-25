@@ -46,12 +46,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.shoppingapp.R
 import com.shoppingapp.data.catalog.BrandCatalog
 import com.shoppingapp.data.catalog.ProduceCatalog
 import com.shoppingapp.data.model.Category
@@ -115,9 +117,8 @@ fun AddProductSheet(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Column {
-                Text("Ürün ekle", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text(
-                    "Önce marketi seç: o marketin markalarıyla öneri gelir.",
+                Text(stringResource(R.string.s_urun_ekle), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.s_once_marketi_sec_o_marketin_markalariyla_oneri_g),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -125,11 +126,11 @@ fun AddProductSheet(
 
             // 1) Market
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Market", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.s_market), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         StoreChipSmall(
-                            label = "Market yok",
+                            label = stringResource(R.string.s_market_yok),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             selected = selectedStoreId == 0L,
                             onClick = { selectedStoreId = 0L }
@@ -152,7 +153,13 @@ fun AddProductSheet(
             ) {
                 Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (showProduceCatalog) "Hazır ürün listesini kapat" else "Hazır ürünler · Fertige Produkte")
+                Text(
+                    if (showProduceCatalog) {
+                        stringResource(R.string.add_product_hide_presets)
+                    } else {
+                        stringResource(R.string.add_product_show_presets)
+                    }
+                )
             }
 
             if (showProduceCatalog) {
@@ -162,9 +169,9 @@ fun AddProductSheet(
                         onValueChange = { produceQuery = it },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        label = { Text("Ürün ara · Produkt suchen") }
+                        label = { Text(stringResource(R.string.s_urun_ara_produkt_suchen)) }
                     )
-                    Text("Bir ürüne dokununca listeye eklenir.", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.s_bir_urune_dokununca_listeye_eklenir), style = MaterialTheme.typography.bodySmall)
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().height(220.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -177,7 +184,16 @@ fun AddProductSheet(
                                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
                                     .clickable {
                                         val itemName = "${produce.turkish} (${produce.german})"
-                                        onConfirm(itemName, selectedStoreId, 1L, qty ?: 1.0, unit, pfand, 0.0)
+                                            .take(MAX_NAME_LENGTH)
+                                        onConfirm(
+                                            itemName,
+                                            selectedStoreId,
+                                            1L,
+                                            (qty ?: 1.0).coerceIn(0.01, MAX_QUANTITY),
+                                            unit.trim().take(MAX_UNIT_LENGTH).ifBlank { "Adet" },
+                                            pfand.coerceIn(0.0, MAX_PRICE),
+                                            0.0
+                                        )
                                         showProduceCatalog = false
                                     }
                                     .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -195,23 +211,25 @@ fun AddProductSheet(
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedTextField(
                     value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Ürün adı") },
-                    placeholder = { Text("örn. yoğurt, süt, mineralwasser") },
+                    onValueChange = { value ->
+                        name = value.filterNot { it.isISOControl() }.take(MAX_NAME_LENGTH)
+                    },
+                    label = { Text(stringResource(R.string.s_urun_adi)) },
+                    placeholder = { Text(stringResource(R.string.s_orn_yogurt_sut_mineralwasser)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     isError = nameError,
                     supportingText = when {
                         nameError -> {
-                            { Text("Ürün adı gerekli") }
+                            { Text(stringResource(R.string.s_urun_adi_gerekli)) }
                         }
 
                         suggestions.isNotEmpty() -> {
-                            { Text("${selectedStore?.name} · ${suggestions.size} öneri") }
+                            { Text(stringResource(R.string.p_x_x_oneri, selectedStore?.name.orEmpty(), suggestions.size)) }
                         }
 
                         selectedStore == null -> {
-                            { Text("Marka önerileri için yukarıdan market seç.") }
+                            { Text(stringResource(R.string.s_marka_onerileri_icin_yukaridan_market_sec)) }
                         }
 
                         else -> null
@@ -234,9 +252,11 @@ fun AddProductSheet(
                 OutlinedTextField(
                     value = quantityText,
                     onValueChange = { value ->
-                        quantityText = value.filter { it.isDigit() || it == ',' || it == '.' }
+                        quantityText = value
+                            .filter { it.isDigit() || it == ',' || it == '.' }
+                            .take(MAX_DECIMAL_LENGTH)
                     },
-                    label = { Text("Miktar") },
+                    label = { Text(stringResource(R.string.s_miktar)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = qtyError,
@@ -244,9 +264,11 @@ fun AddProductSheet(
                 )
                 OutlinedTextField(
                     value = unit,
-                    onValueChange = { unit = it },
-                    label = { Text("Birim") },
-                    placeholder = { Text("kg, L, Adet") },
+                    onValueChange = { value ->
+                        unit = value.filterNot { it.isISOControl() }.take(MAX_UNIT_LENGTH)
+                    },
+                    label = { Text(stringResource(R.string.s_birim)) },
+                    placeholder = { Text(stringResource(R.string.s_kg_l_adet)) },
                     modifier = Modifier.weight(1.2f),
                     singleLine = true
                 )
@@ -256,10 +278,12 @@ fun AddProductSheet(
                 OutlinedTextField(
                     value = priceText,
                     onValueChange = { value ->
-                        priceText = value.filter { it.isDigit() || it == ',' || it == '.' }
+                        priceText = value
+                            .filter { it.isDigit() || it == ',' || it == '.' }
+                            .take(MAX_DECIMAL_LENGTH)
                     },
-                    label = { Text("Fiyat (€)") },
-                    placeholder = { Text("0,00") },
+                    label = { Text(stringResource(R.string.s_fiyat_euro)) },
+                    placeholder = { Text(stringResource(R.string.s_0_00)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -267,10 +291,12 @@ fun AddProductSheet(
                 OutlinedTextField(
                     value = pfandText,
                     onValueChange = { value ->
-                        pfandText = value.filter { it.isDigit() || it == ',' || it == '.' }
+                        pfandText = value
+                            .filter { it.isDigit() || it == ',' || it == '.' }
+                            .take(MAX_DECIMAL_LENGTH)
                     },
-                    label = { Text("Pfand (€)") },
-                    placeholder = { Text("0,00") },
+                    label = { Text(stringResource(R.string.s_pfand_euro)) },
+                    placeholder = { Text(stringResource(R.string.s_0_00)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -279,16 +305,18 @@ fun AddProductSheet(
 
             if (categories.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        "Kategori",
+                    Text(stringResource(R.string.s_kategori),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         text = if (selectedCategoryId == 0L) {
-                            "Otomatik: ürün adından tahmin edilir (görsel buna göre seçilir)."
+                            stringResource(R.string.add_product_category_auto)
                         } else {
-                            "Seçili: ${categories.firstOrNull { it.id == selectedCategoryId }?.nameTr.orEmpty()}"
+                            stringResource(
+                                R.string.add_product_category_selected,
+                                categories.firstOrNull { it.id == selectedCategoryId }?.nameTr.orEmpty()
+                            )
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -298,7 +326,7 @@ fun AddProductSheet(
                             FilterChip(
                                 selected = selectedCategoryId == 0L,
                                 onClick = { selectedCategoryId = 0L },
-                                label = { Text("Otomatik") },
+                                label = { Text(stringResource(R.string.s_otomatik)) },
                                 leadingIcon = {
                                     Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
                                 },
@@ -330,15 +358,17 @@ fun AddProductSheet(
                 onClick = {
                     touched = true
                     val validQty = qty ?: return@Button
-                    if (name.isNotBlank() && validQty > 0.0) {
+                    val trimmedName = name.trim()
+                    if (trimmedName.isNotEmpty() && validQty > 0.0) {
                         onConfirm(
-                            name.trim(),
+                            trimmedName.take(MAX_NAME_LENGTH),
                             selectedStoreId,
                             selectedCategoryId,
-                            validQty,
-                            unit.ifBlank { "Adet" },
-                            pfand.coerceAtLeast(0.0),
-                            (priceText.replace(',', '.').toDoubleOrNull() ?: 0.0).coerceAtLeast(0.0)
+                            validQty.coerceIn(0.01, MAX_QUANTITY),
+                            unit.trim().take(MAX_UNIT_LENGTH).ifBlank { "Adet" },
+                            pfand.coerceIn(0.0, MAX_PRICE),
+                            (priceText.replace(',', '.').toDoubleOrNull() ?: 0.0)
+                                .coerceIn(0.0, MAX_PRICE)
                         )
                     }
                 },
@@ -346,7 +376,7 @@ fun AddProductSheet(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Listeye ekle")
+                Text(stringResource(R.string.s_listeye_ekle))
             }
         }
     }
@@ -383,14 +413,13 @@ private fun SuggestionRow(title: String, brand: String?, onClick: () -> Unit) {
                 )
                 if (brand != null) {
                     Text(
-                        text = "Eigenmarke · $brand",
+                        text = stringResource(R.string.p_eigenmarke_x, brand),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            Text(
-                text = "Ekle",
+            Text(text = stringResource(R.string.s_ekle),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
@@ -421,6 +450,14 @@ private fun StoreChipSmall(label: String, color: Color, selected: Boolean, onCli
         )
     )
 }
+
+// Kullanıcı girdisi sınırları: çok uzun ad veya aşırı fiyat/miktar listeyi ve
+// istatistikleri bozmasın. Aynı sınırlar paylaşılan metin içe aktarmasında da var.
+private const val MAX_NAME_LENGTH = 60
+private const val MAX_UNIT_LENGTH = 12
+private const val MAX_DECIMAL_LENGTH = 7
+private const val MAX_QUANTITY = 999.0
+private const val MAX_PRICE = 9_999.0
 
 private fun parseColorOr(hex: String): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }

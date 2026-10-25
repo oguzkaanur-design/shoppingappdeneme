@@ -1,0 +1,143 @@
+name: CI
+
+# Her push ve pull request'te birim testleri, Android lint ve debug derlemesi.
+# Release imzası bu işte yoktur; imzalı APK yalnızca android-release.yml üretir.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Tests, lint and debug build
+    runs-on: ubuntu-24.04
+    env:
+      ANDROID_COMPILE_SDK: "36"
+      ANDROID_BUILD_TOOLS: "36.0.0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Android SDK
+        run: |
+          set -euo pipefail
+          SDK="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$SDK/cmdline-tools"
+          cd "$SDK/cmdline-tools"
+          curl -fsSL --retry 3 -o cmdline-tools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
+          unzip -q cmdline-tools.zip
+          mv cmdline-tools latest
+          rm cmdline-tools.zip
+
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "$SDK/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" \
+            "platforms;android-$ANDROID_COMPILE_SDK" \
+            "build-tools;$ANDROID_BUILD_TOOLS"
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # Premium lisansının özel anahtarı ve imza deposu asla depoda olmamalı;
+      # yanlışlıkla eklenirse burada durur.
+      - name: Guard signing and licence secrets
+        run: |
+          set -euo pipefail
+          leaked=$(git ls-files | grep -Ei '(\.jks|\.keystore|\.pem|keystore\.properties)$' || true)
+          if [ -n "$leaked" ]; then
+            echo "::error::Secret material is tracked in git:"
+            echo "$leaked"
+            exit 1
+          fi
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --no-daemon --console=plain
+
+      - name: Android lint (errors block the build)
+        run: ./gradlew :app:lintDebug --no-daemon --console=plain
+
+      - name: Assemble debug APK
+        run: ./gradlew :app:assembleDebug --no-daemon --console=plain
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: ignore
+
+  instrumented:
+    name: Instrumented tests (API 36, 16 KB)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      # GitHub Linux runner'da KVM olmadan emülatör yazılım hızına düşer ve
+      # testler zaman aşımına uğrar. Bu adım resmî android-emulator-runner
+      # kurulumunun istediği izinleri hazırlar.
+      - name: Enable KVM
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # 16 KB sayfa boyutlu, Play Store imajlı API 36 emülatörü: gerçek cihaz
+      # davranışına en yakın hedef. Testler migration, uygulama kilidi, yedek
+      # geri yükleme ve Compose yerleşimini kapsar.
+      - name: Run instrumented tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis_playstore_ps16k
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain
+
+      - name: Upload instrumented test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-test-reports
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore

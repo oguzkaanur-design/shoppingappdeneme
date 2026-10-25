@@ -1,0 +1,26 @@
+version: 2
+
+# Bağımlılık güvenlik açıkları elle fark edilmeden birikmesin: Gradle ve
+# GitHub Actions sürümleri haftalık/aylık PR olarak gelir. CI bu PR'ları
+# test eder; release işi yalnızca imza secret'ları varsa çalışır.
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies

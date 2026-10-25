@@ -72,6 +72,31 @@ object AppMigrations {
         }
     }
 
+    /**
+     * v7, sık sorgulanan kolonlara indeks ekler: barkod araması, aktif liste, kiler
+     * ürünü, geçmiş satırları, Pfand durumu ve Cebim sıralaması. Veri değişmez.
+     */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_products_barcode` ON `products` (`barcode`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_list_items_isPurchased` ON `list_items` (`isPurchased`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_list_items_productId` ON `list_items` (`productId`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_items_productId` ON `pantry_items` (`productId`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_purchase_history_purchaseDate` ON `purchase_history` (`purchaseDate`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_purchase_history_items_historyId` ON `purchase_history_items` (`historyId`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_purchase_history_items_productId` ON `purchase_history_items` (`productId`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_pfand_entries_isReturned` ON `pfand_entries` (`isReturned`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_money_entries_createdAt` ON `money_entries` (`createdAt`)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_flyer_list_items_validToEpochMs` ON `flyer_list_items` (`validToEpochMs`)")
+        }
+    }
+
     /** `Room.databaseBuilder(...).addMigrations(*AppMigrations.ALL)` için sıralı liste. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_2_3,
+        MIGRATION_3_4,
+        MIGRATION_4_5,
+        MIGRATION_5_6,
+        MIGRATION_6_7
+    )
 }

@@ -1,33 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive ikon ön katmanı: beyaz market çantası + amber liste çizgileri.
-     Güvenli alan (108dp içinde ortadaki ~66dp) içinde kalacak şekilde çizildi. -->
+<!-- Baskit adaptive ikon ön katmanı: krem sepet, lime sap ve geri dönüşüm
+     rozeti. 108dp tuvale çizilir; görünür kısım ortadaki ~66dp güvenli alandır. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Çanta sapı -->
+    <!-- Sepet sapı -->
     <path
-        android:pathData="M46,51 C46,40 62,40 62,51"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4.5"
+        android:pathData="M42,52 C42,36 66,36 66,52"
+        android:strokeColor="#D9F99D"
+        android:strokeWidth="5"
         android:strokeLineCap="round" />
 
-    <!-- Çanta gövdesi -->
+    <!-- Sepet gövdesi (üstte geniş, altta daralan yuvarlak trapez) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M39,50 H69 A3,3 0 0 1 72,53 V75 A5,5 0 0 1 67,80 H41 A5,5 0 0 1 36,75 V53 A3,3 0 0 1 39,50 Z" />
+        android:fillColor="#FFF8ED"
+        android:pathData="M34,51 H74 L69.6,75.5 Q69,79 65.5,79 H42.5 Q39,79 38.4,75.5 Z" />
 
-    <!-- Liste çizgileri -->
+    <!-- Üst kenar -->
     <path
-        android:pathData="M44,60 H64"
-        android:strokeColor="#FBBF24"
-        android:strokeWidth="4"
+        android:pathData="M33,51 H75"
+        android:strokeColor="#FFF8ED"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+
+    <!-- Sepet örgü çizgileri -->
+    <path
+        android:pathData="M45,56 L47.5,73"
+        android:strokeColor="#0B3D2E"
+        android:strokeAlpha="0.28"
+        android:strokeWidth="2.2"
         android:strokeLineCap="round" />
     <path
-        android:pathData="M44,69 H57"
-        android:strokeColor="#FBBF24"
-        android:strokeWidth="4"
+        android:pathData="M54,56 L54,74"
+        android:strokeColor="#0B3D2E"
+        android:strokeAlpha="0.28"
+        android:strokeWidth="2.2"
         android:strokeLineCap="round" />
+    <path
+        android:pathData="M63,56 L60.5,73"
+        android:strokeColor="#0B3D2E"
+        android:strokeAlpha="0.28"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round" />
+
+    <!-- Pfand / geri dönüşüm rozeti -->
+    <path
+        android:fillColor="#D9F99D"
+        android:pathData="M71,31 A8.5,8.5 0 1 0 71,48 A8.5,8.5 0 1 0 71,31 Z" />
+    <path
+        android:pathData="M67.2,39.6 L69.8,42.2 L75,36.6"
+        android:strokeColor="#0B3D2E"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
 </vector>

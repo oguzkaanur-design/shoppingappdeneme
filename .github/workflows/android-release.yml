@@ -31,8 +31,8 @@ jobs:
     # Sabit sürüm: "ubuntu-latest" etiketi Ubuntu 26'ya geçiyor, bu da SDK düzenini değiştirebilir.
     runs-on: ubuntu-24.04
     env:
-      ANDROID_COMPILE_SDK: "34"
-      ANDROID_BUILD_TOOLS: "34.0.0"
+      ANDROID_COMPILE_SDK: "36"
+      ANDROID_BUILD_TOOLS: "36.0.0"
 
     steps:
       - name: Checkout
@@ -54,7 +54,7 @@ jobs:
           mkdir -p "$SDK/cmdline-tools"
           cd "$SDK/cmdline-tools"
           curl -fsSL --retry 3 -o cmdline-tools.zip \
-            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
           unzip -q cmdline-tools.zip
           mv cmdline-tools latest
           rm cmdline-tools.zip
@@ -103,13 +103,18 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Build release APK
+      # Yayın öncesi kapı: kırık bir birim testi veya lint hatası imzalı
+      # artifact üretmeden önce burada durur.
+      - name: Unit tests and lint gate
+        run: ./gradlew :app:testDebugUnitTest :app:lintDebug --no-daemon --console=plain
+
+      - name: Build release APK and AAB
         run: |
           set -euo pipefail
           ARGS=()
           if [ -n "${{ inputs.versionCode }}" ]; then ARGS+=("-PversionCode=${{ inputs.versionCode }}"); fi
           if [ -n "${{ inputs.versionName }}" ]; then ARGS+=("-PversionName=${{ inputs.versionName }}"); fi
-          ./gradlew :app:assembleRelease --no-daemon --console=plain ${ARGS[@]+"${ARGS[@]}"}
+          ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon --console=plain ${ARGS[@]+"${ARGS[@]}"}
 
       - name: Verify the APK is signed
         run: |
@@ -118,16 +123,37 @@ jobs:
           test -f "$APK" || { echo "::error::APK üretilmedi"; exit 1; }
           "$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS/apksigner" verify --print-certs "$APK"
 
-      - name: Rename APK for download
+      # Android 15+ 16 KB sayfa boyutlu cihazlarda native kütüphaneler 16 KB hizalı olmalı.
+      - name: Verify 16 KB page alignment
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS/zipalign" -c -P 16 -v 4 "$APK"
+
+      # Play Console APK değil AAB ister. AAB bir JAR olduğu için imzası
+      # jarsigner ile doğrulanır; imzasız paket yüklenemez.
+      - name: Verify the AAB is signed
+        run: |
+          set -euo pipefail
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          test -f "$AAB" || { echo "::error::AAB üretilmedi"; exit 1; }
+          jarsigner -verify -verbose -certs "$AAB" | tee aab-verify.txt
+          grep -q "jar verified" aab-verify.txt || { echo "::error::AAB imzası doğrulanamadı"; exit 1; }
+
+      - name: Rename APK and AAB for download
         id: apk
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/release/app-release.apk
+          AAB=app/build/outputs/bundle/release/app-release.aab
           META=app/build/outputs/apk/release/output-metadata.json
           VERSION=$(python3 -c "import json;e=json.load(open('$META'))['elements'][0];print(f\"{e['versionName']}-v{e['versionCode']}\")")
           NAME="shoppingapp-$VERSION.apk"
+          AAB_NAME="shoppingapp-$VERSION.aab"
           cp "$APK" "$NAME"
+          cp "$AAB" "$AAB_NAME"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "aab_name=$AAB_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -136,11 +162,29 @@ jobs:
           path: ${{ steps.apk.outputs.name }}
           if-no-files-found: error
 
+      - name: Upload AAB artifact (Play Console)
+        uses: actions/upload-artifact@v4
+        with:
+          name: shoppingapp-release-aab
+          path: ${{ steps.apk.outputs.aab_name }}
+          if-no-files-found: error
+
+      # R8 karıştırılmış yığın izlerini Play Console'da çözebilmek için mapping
+      # dosyası her sürümde saklanmalı.
+      - name: Upload R8 mapping
+        uses: actions/upload-artifact@v4
+        with:
+          name: shoppingapp-r8-mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+
       - name: Publish Release (telefondan tek dokunuşla indirme)
         if: ${{ inputs.releaseTag != '' || startsWith(github.ref, 'refs/tags/v') }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.releaseTag || github.ref_name }}
           name: ${{ inputs.releaseTag || github.ref_name }}
-          files: ${{ steps.apk.outputs.name }}
+          files: |
+            ${{ steps.apk.outputs.name }}
+            ${{ steps.apk.outputs.aab_name }}
           generate_release_notes: true

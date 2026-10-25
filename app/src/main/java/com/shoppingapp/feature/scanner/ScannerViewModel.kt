@@ -1,13 +1,17 @@
 package com.shoppingapp.feature.scanner
 
+import android.content.Context
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shoppingapp.R
+import com.shoppingapp.data.model.LastPriceRow
 import com.shoppingapp.data.model.Product
 import com.shoppingapp.data.model.Store
 import com.shoppingapp.data.repository.ProductLookupRepository
 import com.shoppingapp.data.repository.ShoppingRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +22,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** Barkod okundu, ürün bulundu; kullanıcı hangi marketten aldığını seçecek. */
-data class PendingScan(val product: Product, val barcode: String)
+data class PendingScan(
+    val product: Product,
+    val barcode: String,
+    /** Aynı ürüne en son ödenen fiyat; geçmiş yoksa null. */
+    val lastPrice: LastPriceRow? = null
+)
 
 /** Listeye eklenen son tarama. */
 data class AddedScan(val product: Product, val storeId: Long)
@@ -33,6 +42,7 @@ data class ScannerUiState(
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val lookupRepository: ProductLookupRepository,
     private val shoppingRepository: ShoppingRepository
 ) : ViewModel() {
@@ -60,12 +70,17 @@ class ScannerViewModel @Inject constructor(
 
         viewModelScope.launch {
             runCatching {
-                lookupRepository.findOrCreate(value)
-            }.onSuccess { product ->
+                val product = lookupRepository.findOrCreate(value)
+                product to shoppingRepository.lastPriceFor(product.id)
+            }.onSuccess { (product, lastPrice) ->
                 _state.update {
                     it.copy(
                         isLookingUp = false,
-                        pending = PendingScan(product = product, barcode = value),
+                        pending = PendingScan(
+                            product = product,
+                            barcode = value,
+                            lastPrice = lastPrice
+                        ),
                         error = null
                     )
                 }
@@ -73,7 +88,7 @@ class ScannerViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         isLookingUp = false,
-                        error = "Barkod okundu ama ürün kaydedilemedi. Tekrar deneyin."
+                        error = context.getString(R.string.scanner_save_failed)
                     )
                 }
             }

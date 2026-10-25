@@ -15,13 +15,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.WaterDrop
@@ -39,6 +42,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -48,9 +54,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -58,7 +69,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.shoppingapp.R
 import com.shoppingapp.data.model.PfandEntry
+import com.shoppingapp.data.pfand.PfandPlanError
+import com.shoppingapp.data.pfand.PfandPlanResult
+import com.shoppingapp.data.pfand.PfandReturnPlan
+import com.shoppingapp.data.pfand.PfandReturnPlanner
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 private data class PfandPreset(
@@ -79,6 +96,9 @@ private val presets = listOf(
 @Composable
 fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var selectedPreset by remember { mutableStateOf(presets.first()) }
     var unitPrice by remember { mutableStateOf(amount(presets.first().amount)) }
@@ -89,13 +109,13 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Pfand", fontWeight = FontWeight.Bold)
-                        Text(
-                            "İade edilecek şişe, teneke ve kasalar",
+                        Text(stringResource(R.string.s_pfand), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.s_iade_edilecek_sise_teneke_ve_kasalar),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -106,7 +126,7 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                         IconButton(onClick = { confirmReset = true }) {
                             Icon(
                                 Icons.Outlined.DeleteOutline,
-                                contentDescription = "Pfand verilerini sıfırla",
+                                contentDescription = stringResource(R.string.s_pfand_verilerini_sifirla),
                                 tint = MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
                             )
                         }
@@ -154,14 +174,18 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
             }
 
             if (state.pending.isNotEmpty()) {
-                item { SectionTitle("Bekleyen Pfand", "${state.pendingUnits} adet") }
+                item {
+                    SectionTitle(
+                        stringResource(R.string.pfand_pending_title),
+                        stringResource(R.string.pfand_pending_units, state.pendingUnits)
+                    )
+                }
                 items(state.pending, key = { it.id }) { entry ->
                     PfandRow(entry = entry, onDelete = { viewModel.deleteEntry(entry) })
                 }
             } else {
                 item {
-                    Text(
-                        text = "Henüz Pfand eklemedin. Yukarıdan tür seçip adet girebilirsin.",
+                    Text(text = stringResource(R.string.s_henuz_pfand_eklemedin_yukaridan_tur_secip_adet_g),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -181,13 +205,13 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "İade geçmişi · ${euro(state.returnedTotal)}",
+                            text = stringResource(R.string.p_iade_gecmisi_x, euro(state.returnedTotal)),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
                         )
                         TextButton(onClick = { viewModel.clearReturned() }) {
-                            Text("Temizle")
+                            Text(stringResource(R.string.s_temizle))
                         }
                     }
                 }
@@ -201,11 +225,16 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
     if (confirmReset) {
         AlertDialog(
             onDismissRequest = { confirmReset = false },
-            title = { Text("Pfand verilerini sıfırla") },
+            title = { Text(stringResource(R.string.s_pfand_verilerini_sifirla)) },
             text = {
                 Text(
-                    "Bekleyen (${euro(state.pendingTotal)}) ve iade edilmiş tüm Pfand kayıtları silinir. " +
-                        "Liste ve alışveriş geçmişi etkilenmez."
+                    stringResource(
+                        R.string.pfand_reset_extra,
+                        stringResource(
+                            R.string.p_bekleyen_x_ve_iade_edilmis_tum_pfand_kay,
+                            euro(state.pendingTotal)
+                        )
+                    )
                 )
             },
             confirmButton = {
@@ -214,37 +243,225 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                         viewModel.resetAll()
                         confirmReset = false
                     }
-                ) { Text("Sıfırla") }
+                ) { Text(stringResource(R.string.s_sifirla)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmReset = false }) { Text("Vazgeç") }
+                TextButton(onClick = { confirmReset = false }) { Text(stringResource(R.string.s_vazgec)) }
             }
         )
     }
 
     if (confirmReturn) {
-        AlertDialog(
-            onDismissRequest = { confirmReturn = false },
-            title = { Text("İadeyi tamamla") },
-            text = {
-                Text(
-                    "${euro(state.pendingTotal)} tutarındaki ${state.pendingUnits} adet Pfand iade alındı " +
-                        "olarak işaretlensin ve tutar Cebim'deki Nakit bakiyesine eklensin mi?"
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.returnAll()
-                        confirmReturn = false
+        ReturnPfandDialog(
+            entries = state.pending,
+            pendingTotal = state.pendingTotal,
+            pendingUnits = state.pendingUnits,
+            onDismiss = { confirmReturn = false },
+            onConfirm = { paidCents ->
+                confirmReturn = false
+                viewModel.returnAmount(paidCents) { result ->
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            if (result.success) {
+                                context.getString(
+                                    R.string.pfand_return_done,
+                                    euro(result.amountCents / 100.0),
+                                    result.returnedUnits
+                                )
+                            } else {
+                                context.getString(R.string.pfand_return_failed)
+                            }
+                        )
                     }
-                ) { Text("İadeyi al") }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmReturn = false }) { Text("Vazgeç") }
+                }
             }
         )
     }
+}
+
+/**
+ * İade diyaloğu: marketin ödediği tutar girilir, tutara denk gelen şişe/kasa adedi
+ * canlı olarak hesaplanır. Yalnızca o adetler iade alınmış sayılır.
+ */
+@Composable
+internal fun ReturnPfandDialog(
+    entries: List<PfandEntry>,
+    pendingTotal: Double,
+    pendingUnits: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (paidCents: Int) -> Unit
+) {
+    // Alan, cihazın (veya uygulama içi dil seçiminin) ondalık ayırıcısını gösterir.
+    val locale = LocalConfiguration.current.locales[0]
+    val separator = remember(locale) { PfandAmount.separatorFor(locale) }
+    var amountText by remember { mutableStateOf("") }
+    val paidCents = PfandAmount.parseCents(amountText)
+    // Kısayolun yazacağı tutar, planlayıcının toplamıyla aynı kaynaktan gelir.
+    val pendingCents = remember(entries) {
+        entries.filter { !it.isReturned && it.quantity > 0 }
+            .sumOf { PfandReturnPlanner.unitCents(it) * it.quantity }
+    }
+    val plan = remember(entries, paidCents) {
+        paidCents?.let { PfandReturnPlanner.plan(entries, it) }
+    }
+    val planError = (plan as? PfandPlanResult.Error)?.reason
+    val invalidInput = amountText.isNotBlank() && paidCents == null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.s_iadeyi_tamamla)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = stringResource(R.string.pfand_return_prompt),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.size(10.dp))
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = { amountText = PfandAmount.sanitize(it, separator) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(PfandScreenTestTags.RETURN_AMOUNT),
+                    label = { Text(stringResource(R.string.pfand_return_amount_label)) },
+                    placeholder = { Text(stringResource(R.string.pfand_return_amount_placeholder)) },
+                    prefix = { Text("€") },
+                    singleLine = true,
+                    isError = invalidInput || planError != null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    supportingText = {
+                        Text(
+                            stringResource(
+                                R.string.pfand_return_pending,
+                                euro(pendingTotal),
+                                pendingUnits
+                            )
+                        )
+                    }
+                )
+                TextButton(
+                    onClick = { amountText = PfandAmount.format(pendingCents, separator) },
+                    enabled = pendingCents > 0,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .testTag(PfandScreenTestTags.RETURN_ALL)
+                ) {
+                    Icon(
+                        Icons.Default.DoneAll,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.pfand_return_all))
+                }
+                Spacer(Modifier.size(10.dp))
+                when {
+                    invalidInput -> DialogError(stringResource(R.string.pfand_return_invalid_amount))
+                    planError != null -> DialogError(planErrorText(planError, paidCents, entries))
+                    plan is PfandPlanResult.Ready -> ReturnPlanSummary(plan.plan)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val ready = plan as? PfandPlanResult.Ready ?: return@Button
+                    onConfirm(ready.plan.amountCents)
+                },
+                enabled = plan is PfandPlanResult.Ready,
+                modifier = Modifier.testTag(PfandScreenTestTags.RETURN_CONFIRM)
+            ) { Text(stringResource(R.string.s_iadeyi_al)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.s_vazgec)) }
+        }
+    )
+}
+
+@Composable
+private fun DialogError(message: String) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.testTag(PfandScreenTestTags.RETURN_ERROR)
+    )
+}
+
+@Composable
+private fun ReturnPlanSummary(plan: PfandReturnPlan) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.pfand_return_calc,
+                    plan.returnedUnits,
+                    euro(plan.amountCents / 100.0)
+                ),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.testTag(PfandScreenTestTags.RETURN_CALC)
+            )
+            plan.lines
+                .groupBy { it.label to it.unitCents }
+                .forEach { (key, lines) ->
+                    Text(
+                        text = stringResource(
+                            R.string.pfand_return_line,
+                            key.first,
+                            lines.sumOf { it.quantity },
+                            euro(key.second / 100.0)
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            Text(
+                text = stringResource(
+                    R.string.pfand_return_remaining,
+                    plan.remainingUnits,
+                    euro(plan.remainingCents / 100.0)
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+}
+
+@Composable
+private fun planErrorText(
+    error: PfandPlanError,
+    paidCents: Int?,
+    entries: List<PfandEntry>
+): String = when (error) {
+    PfandPlanError.NO_PENDING -> stringResource(R.string.pfand_return_stale)
+    PfandPlanError.INVALID_AMOUNT -> stringResource(R.string.pfand_return_invalid_amount)
+    PfandPlanError.EXCEEDS_PENDING -> stringResource(R.string.pfand_return_exceeds)
+    PfandPlanError.NO_EXACT_MATCH -> {
+        val smallestUnit = entries.minOfOrNull { PfandReturnPlanner.unitCents(it) } ?: 0
+        if (paidCents != null && paidCents < smallestUnit) {
+            stringResource(R.string.pfand_return_too_little)
+        } else {
+            stringResource(R.string.pfand_return_no_match)
+        }
+    }
+}
+
+internal object PfandScreenTestTags {
+    const val RETURN_AMOUNT = "pfand_return_amount"
+    const val RETURN_ALL = "pfand_return_all"
+    const val RETURN_CONFIRM = "pfand_return_confirm"
+    const val RETURN_CALC = "pfand_return_calc"
+    const val RETURN_ERROR = "pfand_return_error"
 }
 
 @Composable
@@ -274,8 +491,7 @@ private fun TotalCard(total: Double, units: Int, hasEntries: Boolean, onReturn: 
                     )
                 }
                 Column(modifier = Modifier.padding(start = 12.dp)) {
-                    Text(
-                        "Toplam Pfand değeri",
+                    Text(stringResource(R.string.s_toplam_pfand_degeri),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f)
                     )
@@ -289,7 +505,11 @@ private fun TotalCard(total: Double, units: Int, hasEntries: Boolean, onReturn: 
             }
 
             Text(
-                text = if (hasEntries) "$units adet iade bekliyor" else "Henüz iade bekleyen yok",
+                text = if (hasEntries) {
+                    stringResource(R.string.pfand_waiting_count, units)
+                } else {
+                    stringResource(R.string.pfand_none_waiting)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
                 modifier = Modifier.padding(top = 8.dp)
@@ -306,10 +526,10 @@ private fun TotalCard(total: Double, units: Int, hasEntries: Boolean, onReturn: 
                         contentColor = MaterialTheme.colorScheme.secondaryContainer
                     )
                 ) {
-                    Text("İadeyi al")
+                    Text(stringResource(R.string.s_iadeyi_al))
                 }
                 Text(
-                    text = "İade tamamlanınca ${euro(total)} Cebim'deki Nakit bakiyesine otomatik eklenir.",
+                    text = stringResource(R.string.p_iade_tamamlaninca_x_cebim_deki_nakit_bak, euro(total)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
                     modifier = Modifier.padding(top = 8.dp)
@@ -339,9 +559,8 @@ private fun AddCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Pfand ekle", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Tür seç, adet ve birim fiyatı istediğin gibi düzenle.",
+            Text(stringResource(R.string.s_pfand_ekle), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.s_tur_sec_adet_ve_birim_fiyati_istedigin_gibi_duze),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -378,7 +597,7 @@ private fun AddCard(
                     onValueChange = { value ->
                         onUnitPriceChange(value.filter { it.isDigit() || it == ',' || it == '.' })
                     },
-                    label = { Text("Birim fiyat (€)") },
+                    label = { Text(stringResource(R.string.s_birim_fiyat_euro)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f)
@@ -389,7 +608,7 @@ private fun AddCard(
                     onValueChange = { value ->
                         if (value.length <= 4 && value.all(Char::isDigit)) onQuantityChange(value)
                     },
-                    label = { Text("Adet") },
+                    label = { Text(stringResource(R.string.s_adet)) },
                     singleLine = true,
                     isError = quantityText.isNotEmpty() && PfandQuantity.parse(quantityText) == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -398,7 +617,7 @@ private fun AddCard(
             }
 
             Text(
-                text = "Toplam: ${euro((unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0) * (PfandQuantity.parse(quantityText) ?: 0))}",
+                text = stringResource(R.string.p_toplam_x, euro((unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0) * (PfandQuantity.parse(quantityText) ?: 0))),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
@@ -414,7 +633,7 @@ private fun AddCard(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Listeye ekle")
+                Text(stringResource(R.string.s_listeye_ekle))
             }
         }
     }
@@ -443,7 +662,7 @@ private fun PfandRow(entry: PfandEntry, onDelete: () -> Unit) {
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(entry.label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 Text(
-                    "${entry.quantity} × ${euro(entry.unitAmount)}",
+                    stringResource(R.string.p_x_x_5, entry.quantity, euro(entry.unitAmount)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -456,7 +675,7 @@ private fun PfandRow(entry: PfandEntry, onDelete: () -> Unit) {
             IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                 Icon(
                     Icons.Outlined.DeleteOutline,
-                    contentDescription = "Sil",
+                    contentDescription = stringResource(R.string.s_sil),
                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                     modifier = Modifier.size(19.dp)
                 )
@@ -480,7 +699,7 @@ private fun ReturnedRow(entry: PfandEntry) {
             modifier = Modifier.size(18.dp)
         )
         Text(
-            text = "${entry.label} · ${entry.quantity} × ${euro(entry.unitAmount)}",
+            text = stringResource(R.string.p_x_x_x, entry.label, entry.quantity, euro(entry.unitAmount)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier

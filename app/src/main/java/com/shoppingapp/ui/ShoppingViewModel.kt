@@ -1,12 +1,17 @@
 package com.shoppingapp.ui
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.shoppingapp.data.aisle.AisleOrder
 import com.shoppingapp.data.catalog.BrandCatalog
 import com.shoppingapp.data.model.*
 import com.shoppingapp.data.repository.PurchaseLine
 import com.shoppingapp.data.repository.PurchaseReceipt
+import com.shoppingapp.R
 import com.shoppingapp.data.repository.ShoppingRepository
+import com.shoppingapp.widget.WidgetUpdater
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,38 +28,61 @@ data class ShoppingUiState(
     val items: List<UiShoppingItem> = emptyList(),
     val stores: List<Store> = emptyList(),
     val categories: List<Category> = emptyList(),
+    val frequent: List<FrequentProductRow> = emptyList(),
     val selectedStoreId: Long? = null,
     val isLoading: Boolean = true
 ) {
     val pendingItems: List<UiShoppingItem> get() = items.filter { !it.listItem.isPurchased }
     val purchasedItems: List<UiShoppingItem> get() = items.filter { it.listItem.isPurchased }
+    val selectedStore: Store? get() = stores.firstOrNull { it.id == selectedStoreId }
     val pfandTotal: Double
         get() = pendingItems.sumOf { it.product.pfandAmount * it.listItem.quantity }
     val euroTotal: Double
         get() = pendingItems.sumOf { it.product.priceEuro * it.listItem.quantity }
+
+    /**
+     * Seçili marketin reyon sırası. "Tümü" görünümünde reyon sırası anlamsız
+     * olduğu için boş döner ve liste düz gösterilir.
+     */
+    val aisleOrder: List<Long>
+        get() = selectedStore?.let { AisleOrder.parse(it.aisleOrderJson) }.orEmpty()
 }
 
 @HiltViewModel
 class ShoppingViewModel @Inject constructor(
-    private val repository: ShoppingRepository
+    private val repository: ShoppingRepository,
+    private val widgetUpdater: WidgetUpdater,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _selectedStoreId = MutableStateFlow<Long?>(null)
     private val _receipt = MutableStateFlow<PurchaseReceipt?>(null)
+    private val _message = MutableStateFlow<String?>(null)
     val receipt: StateFlow<PurchaseReceipt?> = _receipt.asStateFlow()
+    val message: StateFlow<String?> = _message.asStateFlow()
+
+    private data class Base(
+        val items: List<ListItem>,
+        val products: List<Product>,
+        val stores: List<Store>,
+        val categories: List<Category>
+    )
 
     val uiState: StateFlow<ShoppingUiState> = combine(
-        repository.allListItems,
-        repository.allProducts,
-        repository.allStores,
-        repository.allCategories,
-        _selectedStoreId
-    ) { items, products, stores, categories, selectedStore ->
-        val productMap = products.associateBy { it.id }
-        val storeMap = stores.associateBy { it.id }
-        val categoryMap = categories.associateBy { it.id }
+        combine(
+            repository.allListItems,
+            repository.allProducts,
+            repository.allStores,
+            repository.allCategories
+        ) { items, products, stores, categories -> Base(items, products, stores, categories) },
+        _selectedStoreId,
+        repository.frequentProducts
+    ) { base, selectedStore, frequent ->
+        val productMap = base.products.associateBy { it.id }
+        val storeMap = base.stores.associateBy { it.id }
+        val categoryMap = base.categories.associateBy { it.id }
 
-        val uiItems = items.mapNotNull { item ->
+        val uiItems = base.items.mapNotNull { item ->
             val product = productMap[item.productId] ?: return@mapNotNull null
             UiShoppingItem(
                 listItem = item,
@@ -68,8 +96,9 @@ class ShoppingViewModel @Inject constructor(
 
         ShoppingUiState(
             items = uiItems,
-            stores = stores,
-            categories = categories,
+            stores = base.stores,
+            categories = base.categories,
+            frequent = frequent,
             selectedStoreId = selectedStore,
             isLoading = false
         )
@@ -92,6 +121,7 @@ class ShoppingViewModel @Inject constructor(
     fun togglePurchased(item: ListItem) {
         viewModelScope.launch {
             repository.updateListItem(item.copy(isPurchased = !item.isPurchased))
+            widgetUpdater.refresh()
         }
     }
 
@@ -99,12 +129,14 @@ class ShoppingViewModel @Inject constructor(
         val next = (item.quantity + delta).coerceAtLeast(1.0)
         viewModelScope.launch {
             repository.updateListItem(item.copy(quantity = next))
+            widgetUpdater.refresh()
         }
     }
 
     fun deleteItem(item: ListItem) {
         viewModelScope.launch {
             repository.deleteListItem(item)
+            widgetUpdater.refresh()
         }
     }
 
@@ -140,6 +172,29 @@ class ShoppingViewModel @Inject constructor(
             )
             val productId = repository.addProduct(product)
             repository.addListItem(productId = productId, storeId = storeId, quantity = quantity)
+            widgetUpdater.refresh()
+        }
+    }
+
+    /** "Sık alınanlar" şeridinden tek dokunuşla listeye ekler. */
+    fun addFrequent(row: FrequentProductRow) {
+        viewModelScope.launch {
+            repository.addFrequentToList(row)
+            _message.value = context.getString(R.string.toast_added_to_list, row.name)
+            widgetUpdater.refresh()
+        }
+    }
+
+    /** Son tamamlanan alışverişteki ürünleri listeye geri koyar. */
+    fun repeatLastPurchase() {
+        viewModelScope.launch {
+            val added = repository.repeatLastPurchase()
+            _message.value = if (added > 0) {
+                context.getString(R.string.toast_repeat_added, added)
+            } else {
+                context.getString(R.string.toast_repeat_none)
+            }
+            widgetUpdater.refresh()
         }
     }
 
@@ -147,12 +202,14 @@ class ShoppingViewModel @Inject constructor(
     fun resetShoppingData() {
         viewModelScope.launch {
             repository.resetShoppingData()
+            widgetUpdater.refresh()
         }
     }
 
     fun clearPurchased() {
         viewModelScope.launch {
             repository.clearPurchasedItems()
+            widgetUpdater.refresh()
         }
     }
 
@@ -183,10 +240,15 @@ class ShoppingViewModel @Inject constructor(
                 storeId = storeId
             )
             _receipt.value = result
+            widgetUpdater.refresh()
         }
     }
 
     fun dismissReceipt() {
         _receipt.value = null
+    }
+
+    fun dismissMessage() {
+        _message.value = null
     }
 }

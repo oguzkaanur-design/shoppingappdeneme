@@ -1,9 +1,12 @@
 package com.shoppingapp.feature.offers
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shoppingapp.R
 import com.shoppingapp.data.offers.Flyer
+import com.shoppingapp.data.offers.FlyerCache
 import com.shoppingapp.data.offers.FlyerOffer
 import com.shoppingapp.data.offers.FlyerOfferRepository
 import com.shoppingapp.data.offers.FlyerRepository
@@ -12,6 +15,7 @@ import com.shoppingapp.data.offers.FlyerStore
 import com.shoppingapp.data.offers.FlyerStores
 import com.shoppingapp.data.repository.FlyerListRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,14 +28,19 @@ data class OffersUiState(
     val selectedStore: FlyerStore = FlyerStores.all.first(),
     val loading: Boolean = true,
     val flyers: List<Flyer> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    /** Liste internetten değil cihazdaki son kopyadan geldi. */
+    val fromCache: Boolean = false,
+    val cachedAt: Long? = null
 )
 
 @HiltViewModel
 class OffersViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: FlyerRepository,
     private val offerRepository: FlyerOfferRepository,
-    private val flyerListRepository: FlyerListRepository
+    private val flyerListRepository: FlyerListRepository,
+    private val cache: FlyerCache
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OffersUiState())
@@ -89,18 +98,32 @@ class OffersViewModel @Inject constructor(
             try {
                 val flyers = FlyerSelection.relevant(repository.flyers(store))
                 cachedFlyers[store.id] = flyers
+                cache.write(store.id, flyers)
                 if (_uiState.value.selectedStore.id == store.id) {
                     _uiState.value = OffersUiState(selectedStore = store, loading = false, flyers = flyers)
                 }
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (error: Exception) {
+                // Ağ/ayrıştırma hatasında son bilinen liste gösterilir; ekran boş kalmaz.
+                val cached = runCatching { cache.read(store.id) }.getOrNull()
                 if (_uiState.value.selectedStore.id == store.id) {
-                    _uiState.value = OffersUiState(
-                        selectedStore = store,
-                        loading = false,
-                        error = error.message ?: "Prospektüsler yüklenemedi."
-                    )
+                    if (cached != null) {
+                        _uiState.value = OffersUiState(
+                            selectedStore = store,
+                            loading = false,
+                            flyers = FlyerSelection.relevant(cached),
+                            fromCache = true,
+                            cachedAt = cache.savedAt(store.id)
+                        )
+                    } else {
+                        _uiState.value = OffersUiState(
+                            selectedStore = store,
+                            loading = false,
+                            error = error.message
+                                ?: context.getString(R.string.s_prospektusler_yuklenemedi)
+                        )
+                    }
                 }
             }
         }

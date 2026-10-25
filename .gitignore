@@ -34,3 +34,7 @@ keystore-base64.txt
 # OS files
 .DS_Store
 Thumbs.db
+
+# Baskit premium lisans özel anahtarı (asla commit edilmez)
+license/baskit-license-private.pem
+license/*.pem

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Uygulama içi logo işareti: market çantası + liste çizgileri (24dp). -->
+<!-- Uygulama içi Baskit işareti (24dp). Tema renklerini kullanır; açık
+     primaryContainer zemininde de koyu temada da okunur kalır. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -7,21 +8,26 @@
     android:viewportHeight="24">
 
     <path
-        android:pathData="M9.5,8.5 C9.5,5.6 14.5,5.6 14.5,8.5"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.6"
+        android:pathData="M9,11 C9,6.8 15,6.8 15,11"
+        android:strokeColor="#0B3D2E"
+        android:strokeWidth="1.5"
         android:strokeLineCap="round" />
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M7.4,8.2 H16.6 A0.9,0.9 0 0 1 17.5,9.1 V17.6 A1.5,1.5 0 0 1 16,19.1 H8 A1.5,1.5 0 0 1 6.5,17.6 V9.1 A0.9,0.9 0 0 1 7.4,8.2 Z" />
+        android:fillColor="#0B3D2E"
+        android:pathData="M6.6,10.6 H17.4 L16.2,17.3 Q16,18.4 14.9,18.4 H9.1 Q8,18.4 7.8,17.3 Z" />
     <path
-        android:pathData="M9,11.8 H15"
-        android:strokeColor="#FBBF24"
-        android:strokeWidth="1.4"
+        android:pathData="M7.8,11.8 H16.2"
+        android:strokeColor="#D97706"
+        android:strokeAlpha="0.5"
+        android:strokeWidth="1.1"
         android:strokeLineCap="round" />
     <path
-        android:pathData="M9,14.8 H13.4"
-        android:strokeColor="#FBBF24"
-        android:strokeWidth="1.4"
-        android:strokeLineCap="round" />
+        android:fillColor="#D97706"
+        android:pathData="M17.6,2.6 A3.4,3.4 0 1 0 17.6,9.4 A3.4,3.4 0 1 0 17.6,2.6 Z" />
+    <path
+        android:pathData="M16,6 L17.1,7.1 L19.2,4.9"
+        android:strokeColor="#0B3D2E"
+        android:strokeWidth="1.1"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
 </vector>

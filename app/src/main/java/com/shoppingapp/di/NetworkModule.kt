@@ -1,6 +1,7 @@
 package com.shoppingapp.di
 
 import com.shoppingapp.data.remote.OpenFoodFactsApi
+import com.shoppingapp.data.remote.RetryInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,6 +19,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient = OkHttpClient.Builder()
+        // Geçici hatalarda sınırlı tekrar: yalnızca GET, en fazla 3 deneme, 4 sn tavan.
+        .addInterceptor(RetryInterceptor())
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .callTimeout(30, TimeUnit.SECONDS)

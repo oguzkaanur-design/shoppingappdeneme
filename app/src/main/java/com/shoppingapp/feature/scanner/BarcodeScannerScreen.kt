@@ -1,6 +1,7 @@
 package com.shoppingapp.feature.scanner
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,10 +61,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,19 +76,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.shoppingapp.R
 import com.shoppingapp.ui.components.ProductThumb
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.shoppingapp.data.model.Store
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalMaterial3Api::class)
+@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 @Composable
 fun BarcodeScannerScreen(
     onClose: () -> Unit,
@@ -144,6 +155,17 @@ fun BarcodeScannerScreen(
         }
     }
 
+    // Kamera önizlemesi açık renkli olabildiği için durum çubuğu ikonları koyu
+    // kalamaz; tarayıcı açıkken beyaz ikonlar kullanılır, çıkışta geri alınır.
+    val view = LocalView.current
+    DisposableEffect(view) {
+        val window = (view.context as Activity).window
+        val controller = WindowCompat.getInsetsController(window, view)
+        val previousLightStatusBars = controller.isAppearanceLightStatusBars
+        controller.isAppearanceLightStatusBars = false
+        onDispose { controller.isAppearanceLightStatusBars = previousLightStatusBars }
+    }
+
     LaunchedEffect(hasPermission) {
         if (!hasPermission) return@LaunchedEffect
         val provider = withContext(Dispatchers.IO) {
@@ -183,23 +205,39 @@ fun BarcodeScannerScreen(
         camera?.cameraControl?.enableTorch(torchOn)
     }
 
+    // İzin yokken yalnızca izin ekranı çizilir; tarama kontrolleri altta kalırsa üst üste biner.
+    if (!hasPermission) {
+        PermissionRequest(
+            onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+            onClose = onClose
+        )
+        return
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        if (hasPermission) {
-            AndroidView(
-                factory = { previewView },
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            PermissionRequest(
-                onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                onClose = onClose
-            )
-        }
+        AndroidView(
+            factory = { previewView },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Üst kontrollerin ve durum çubuğu ikonlarının okunabilirliği için hafif karartma.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Black.copy(alpha = 0.6f),
+                        1f to Color.Transparent
+                    )
+                )
+        )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -208,10 +246,9 @@ fun BarcodeScannerScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.s_kapat), tint = Color.White)
                 }
-                Text(
-                    text = "Barkod tara",
+                Text(text = stringResource(R.string.s_barkod_tara),
                     color = Color.White,
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.weight(1f)
@@ -219,14 +256,14 @@ fun BarcodeScannerScreen(
                 IconButton(onClick = { showManualEntry = true }) {
                     Icon(
                         imageVector = Icons.Default.Keyboard,
-                        contentDescription = "Barkodu elle gir",
+                        contentDescription = stringResource(R.string.s_barkodu_elle_gir),
                         tint = Color.White
                     )
                 }
                 IconButton(onClick = { torchOn = !torchOn }) {
                     Icon(
                         imageVector = if (torchOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                        contentDescription = "Fener",
+                        contentDescription = stringResource(R.string.s_fener),
                         tint = if (torchOn) Color(0xFFFFD54F) else Color.White
                     )
                 }
@@ -244,8 +281,7 @@ fun BarcodeScannerScreen(
                             .clip(RoundedCornerShape(24.dp))
                             .border(2.dp, Color.White.copy(alpha = 0.9f), RoundedCornerShape(24.dp))
                     )
-                    Text(
-                        text = "Barkodu çerçeveye getir. Ürünü bulunca hangi marketten aldığını seçersin.",
+                    Text(text = stringResource(R.string.s_barkodu_cerceveye_getir_urunu_bulunca_hangi_mark),
                         color = Color.White.copy(alpha = 0.85f),
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
@@ -267,8 +303,7 @@ fun BarcodeScannerScreen(
                                 strokeWidth = 2.dp,
                                 color = Color(0xFF34D399)
                             )
-                            Text(
-                                text = "Ürün aranıyor...",
+                            Text(text = stringResource(R.string.s_urun_araniyor),
                                 color = Color.White,
                                 modifier = Modifier.padding(start = 12.dp)
                             )
@@ -299,8 +334,23 @@ fun BarcodeScannerScreen(
                                             style = MaterialTheme.typography.titleMedium,
                                             maxLines = 2
                                         )
-                                        Text(
-                                            text = "Hangi marketten aldın?",
+                                        pending.lastPrice?.let { last ->
+                                            val date = remember(last.purchaseDate) {
+                                                SimpleDateFormat("d MMM", Locale.GERMANY)
+                                                    .format(Date(last.purchaseDate))
+                                            }
+                                            Text(
+                                                text = stringResource(
+                                                    R.string.scanner_last_price,
+                                                    String.format(Locale.GERMANY, "%.2f", last.priceEuro),
+                                                    last.storeName?.let { " · $it" }.orEmpty(),
+                                                    date
+                                                ),
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                        Text(text = stringResource(R.string.s_hangi_marketten_aldin),
                                             color = Color(0xFF6EE7B7),
                                             style = MaterialTheme.typography.labelLarge
                                         )
@@ -315,7 +365,7 @@ fun BarcodeScannerScreen(
                                         FilterChip(
                                             selected = selectedStoreId == 0L,
                                             onClick = { selectedStoreId = 0L },
-                                            label = { Text("Market yok") },
+                                            label = { Text(stringResource(R.string.s_market_yok)) },
                                             shape = RoundedCornerShape(12.dp),
                                             colors = scanChipColors()
                                         )
@@ -342,15 +392,21 @@ fun BarcodeScannerScreen(
                                         onClick = { viewModel.dismissPending() },
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Vazgeç", color = Color.White.copy(alpha = 0.75f))
+                                        Text(stringResource(R.string.s_vazgec), color = Color.White.copy(alpha = 0.75f))
                                     }
                                     Button(
                                         onClick = { viewModel.confirmAdd(selectedStoreId) },
                                         modifier = Modifier.weight(1.8f)
                                     ) {
                                         Text(
-                                            if (selectedStoreId == 0L) "Listeye ekle"
-                                            else "Listeye ekle · ${storeName(stores, selectedStoreId)}"
+                                            if (selectedStoreId == 0L) {
+                                                stringResource(R.string.s_listeye_ekle)
+                                            } else {
+                                                stringResource(
+                                                    R.string.s_listeye_ekle_x,
+                                                    storeName(stores, selectedStoreId)
+                                                )
+                                            }
                                         )
                                     }
                                 }
@@ -370,7 +426,7 @@ fun BarcodeScannerScreen(
                                     maxLines = 2
                                 )
                                 Text(
-                                    text = "Listeye eklendi · ${storeName(stores, state.lastAdded!!.storeId)} · ${state.addedCount} ürün",
+                                    text = stringResource(R.string.p_listeye_eklendi_x_x_urun, storeName(stores, state.lastAdded!!.storeId), state.addedCount),
                                     color = Color(0xFF6EE7B7),
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -383,8 +439,7 @@ fun BarcodeScannerScreen(
                                 contentDescription = null,
                                 tint = Color(0xFF6EE7B7)
                             )
-                            Text(
-                                text = "Kamerayı bir barkoda doğrult",
+                            Text(text = stringResource(R.string.s_kamerayi_bir_barkoda_dogrult),
                                 color = Color.White.copy(alpha = 0.8f),
                                 modifier = Modifier.padding(start = 12.dp)
                             )
@@ -398,11 +453,16 @@ fun BarcodeScannerScreen(
                                 .fillMaxWidth()
                                 .padding(top = 12.dp)
                         ) {
-                            Text(if (state.addedCount > 0) "Bitir (${state.addedCount})" else "Kapat")
+                            Text(
+                                if (state.addedCount > 0) {
+                                    stringResource(R.string.p_bitir_x, state.addedCount)
+                                } else {
+                                    stringResource(R.string.s_kapat)
+                                }
+                            )
                         }
                     } else {
-                        Text(
-                            text = "Seçilen market ürünün etiketinde görünür.",
+                        Text(text = stringResource(R.string.s_secilen_market_urunun_etiketinde_gorunur),
                             color = Color.White.copy(alpha = 0.55f),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp)
@@ -416,17 +476,16 @@ fun BarcodeScannerScreen(
     if (showManualEntry) {
         AlertDialog(
             onDismissRequest = { showManualEntry = false },
-            title = { Text("Barkodu elle gir") },
+            title = { Text(stringResource(R.string.s_barkodu_elle_gir)) },
             text = {
                 Column {
-                    Text(
-                        "Kamera okumazsa barkod numarasını yaz; ürün yine alınanlara eklenir.",
+                    Text(stringResource(R.string.s_kamera_okumazsa_barkod_numarasini_yaz_urun_yine_),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     OutlinedTextField(
                         value = manualBarcode,
                         onValueChange = { manualBarcode = it.filter(Char::isDigit) },
-                        label = { Text("Barkod (EAN)") },
+                        label = { Text(stringResource(R.string.s_barkod_ean)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.padding(top = 12.dp)
@@ -442,10 +501,10 @@ fun BarcodeScannerScreen(
                             showManualEntry = false
                         }
                     }
-                ) { Text("Ara") }
+                ) { Text(stringResource(R.string.s_ara)) }
             },
             dismissButton = {
-                TextButton(onClick = { showManualEntry = false }) { Text("İptal") }
+                TextButton(onClick = { showManualEntry = false }) { Text(stringResource(R.string.s_iptal)) }
             }
         )
     }
@@ -461,14 +520,17 @@ private fun scanChipColors() = FilterChipDefaults.filterChipColors(
     selectedLabelColor = Color(0xFF052E22)
 )
 
+@Composable
 private fun storeName(stores: List<Store>, storeId: Long): String =
-    stores.firstOrNull { it.id == storeId }?.name ?: "Market seçilmedi"
+    stores.firstOrNull { it.id == storeId }?.name
+        ?: stringResource(R.string.s_market_yok)
 
 @Composable
 private fun PermissionRequest(onRequest: () -> Unit, onClose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.Black)
             .padding(32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -483,8 +545,7 @@ private fun PermissionRequest(onRequest: () -> Unit, onClose: () -> Unit) {
                 .background(Color.White.copy(alpha = 0.12f))
                 .padding(16.dp)
         )
-        Text(
-            text = "Barkod taramak için kamera izni gerekiyor",
+        Text(text = stringResource(R.string.s_barkod_taramak_icin_kamera_izni_gerekiyor),
             color = Color.White,
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
@@ -492,10 +553,9 @@ private fun PermissionRequest(onRequest: () -> Unit, onClose: () -> Unit) {
             modifier = Modifier.padding(top = 20.dp)
         )
         Button(onClick = onRequest, modifier = Modifier.padding(top = 16.dp)) {
-            Text("İzin ver")
+            Text(stringResource(R.string.s_izin_ver))
         }
-        Text(
-            text = "Vazgeç",
+        Text(text = stringResource(R.string.s_vazgec),
             color = Color.White.copy(alpha = 0.7f),
             modifier = Modifier
                 .padding(top = 12.dp)

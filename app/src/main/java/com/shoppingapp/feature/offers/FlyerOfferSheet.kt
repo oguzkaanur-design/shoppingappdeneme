@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.shoppingapp.R
 import com.shoppingapp.data.offers.FlyerOffer
 import com.shoppingapp.data.offers.FlyerPriceLabel
 import com.shoppingapp.data.offers.FlyerStore
@@ -124,7 +126,7 @@ fun FlyerOfferSheet(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                "${store.name} · Prospektüsten",
+                                stringResource(R.string.p_x_prospektusten, store.name),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -145,7 +147,7 @@ fun FlyerOfferSheet(
                     Spacer(Modifier.height(16.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            priceText ?: "Fiyat belirtilmemiş",
+                            priceText ?: stringResource(R.string.offer_no_price),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Black
                         )
@@ -163,7 +165,7 @@ fun FlyerOfferSheet(
                     offer.validTo?.let { validTo ->
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "${FlyerDateLabel.day(validTo)} tarihine kadar geçerli",
+                            stringResource(R.string.p_x_tarihine_kadar_gecerli, FlyerDateLabel.day(validTo)),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
@@ -176,8 +178,7 @@ fun FlyerOfferSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            "Adet",
+                        Text(stringResource(R.string.s_adet),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -185,10 +186,10 @@ fun FlyerOfferSheet(
                             FilledIconStep(
                                 icon = Icons.Default.Remove,
                                 enabled = quantity > 1,
-                                description = "Azalt"
+                                description = stringResource(R.string.s_azalt)
                             ) { quantity = (quantity - 1).coerceAtLeast(1) }
                             Text(
-                                "$quantity",
+                                stringResource(R.string.p_x, quantity),
                                 modifier = Modifier.padding(horizontal = 18.dp),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
@@ -196,7 +197,7 @@ fun FlyerOfferSheet(
                             FilledIconStep(
                                 icon = Icons.Default.Add,
                                 enabled = quantity < 99,
-                                description = "Artır"
+                                description = stringResource(R.string.s_artir)
                             ) { quantity = (quantity + 1).coerceAtMost(99) }
                         }
                     }
@@ -209,10 +210,10 @@ fun FlyerOfferSheet(
                     ) {
                         Icon(Icons.Default.ShoppingBasket, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Fırsat listesine ekle", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.s_firsat_listesine_ekle), fontWeight = FontWeight.Bold)
                     }
                     TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                        Text("Vazgeç")
+                        Text(stringResource(R.string.s_vazgec))
                     }
                 }
             }

@@ -262,3 +262,126 @@ Tasarım yönü `ui-ux-pro-max` skill'inin ürettiği "fresh green + food amber"
 - Uygulama bilgisi ekranında yeni ikon ve **Einkauf** adı doğrulandı.
 - Gerçek telefon: **versionCode 2 → 3 yerinde güncellendi (uninstall yok)**, veriler korundu, uygulama açıldı ve yeni ekleme sayfası telefonda doğru çizildi.
 - **Not:** Telefonda hâlâ 1.1 ile gelen eski demo ürünler var (ör. "Süt 1.5% (Milch)") çünkü örnek veri yalnızca boş veritabanına yazılır; temizlemek için ⋮ → "Alışveriş verilerini sıfırla".
+
+---
+
+## 🚀 v2.0 — Kiler, reyon, yedekleme, grafikler, hatırlatıcılar
+
+- **Kiler**: gerçek ekran, kritik eşik, SKT uyarısı, tek dokunuşla listeye ekleme, alışverişte otomatik stok artışı.
+- **Reyon sıralaması**: 9 market için `aisleOrderJson` dolduruldu; market seçilince liste reyonlara göre gruplanır.
+- **Yedekleme**: JSON dışa/içe aktarma + günlük otomatik yerel yedek + yerel yedekten geri yükleme.
+- **İstatistik**: haftalık/aylık Canvas grafiği, kategori dağılımı, market karşılaştırması, fiyat trendi.
+- **Bildirimler**: WorkManager günlük hatırlatıcı (fırsat SKT, kritik stok, haftalık liste) + ayar/izin ekranı.
+- **Hız**: ana ekran widget'ı, market modu, listeyi paylaşma, sık alınanlar, son alışverişi tekrarla.
+- **Dayanıklılık**: prospektüs önbelleği/çevrimdışı bandı, kısmi `strings.xml`, yeni saf mantık testleri.
+- **Kalan borç**: tüm arayüz metinlerinin `strings.xml`'e taşınması (Almanca için gerekli), gerçek barkodla
+  cihaz testi, Compose UI testleri, AGP/Kotlin sürüm yükseltmesi.
+
+---
+
+## 🌍 v2.3 — 11 dil + PIN/biyometrik uygulama kilidi
+
+- **Diller:** arayüz metinleri `strings.xml`'e taşındı; Türkçe, İngilizce (ABD/UK), Almanca,
+  Bulgarca, Sırpça, Basitleştirilmiş Çince, Ukraynaca, Rusça, Lehçe ve Felemenkçe (11 dil).
+  Play dil bölmesi kapalı (`bundle.language.enableSplit = false`).
+- **Dil ekranı:** aramalı liste, sistem dili seçeneği ve anında uygulama; API 33+ için
+  `LocaleManager.applicationLocales`, eski sürümlerde `attachBaseContext`.
+- **Uygulama kilidi:** isteğe bağlı 4 haneli PIN (PBKDF2-HMAC-SHA256, 150.000 iterasyon,
+  rastgele tuz) ve kayıtlıysa parmak izi. 5 hatalı denemede 30 sn kilit; 3 dakika arka planda
+  kalınca yeniden kilitlenir. Geri tuşu kilidi kapatmaz.
+- **Sürüm:** versionCode 14 / versionName 2.3.
+- **Yatay yerleşim:** 411 dp yüksekliğindeki yatay telefonda geniş "Barkod tara" FAB'ı özet
+  kartındaki "Alışverişi tamamla" düğmesini örtüyordu. Kısa ekranlarda tarama eylemi üst çubuğa
+  taşındı ve FAB gizlendi; dikeyde FAB korunuyor. Ayrıca yatayda mağaza filtreleri, sık alınanlar
+  ve özet kartı listenin başlık öğesi olarak kaydırılıyor; yukarı kaydırınca liste tam yüksekliğe
+  açılıyor. Başlık ekrandan çıkınca "Alışverişi tamamla" üst çubukta tonal onay simgesi olarak
+  kalıyor; böylece liste sonuna kadar kaydırılsa da eylem erişilebilir. Döndürmede liste başa
+  dönüyor. İki yönde doğrulandı (`screenshots/api36-landscape-home.png`,
+  `screenshots/api36-landscape-scrolled.png`, `screenshots/api36-landscape-compact-complete.png`,
+  `screenshots/api36-portrait-home.png`). Bu akış `ShoppingCompactCompleteTest` ile otomatikleştirildi:
+  başlık kaydırma, kompakt ✓, tamamlama diyaloğu ve dikey ⇄ yatay döndürmede listenin başa dönmesi.
+- **Doğrulama:** 145 birim testi, 17/17 cihaz testi (API 36 16 KB: Migration 5, AppLock 9,
+  BackupRestore 2, Compose yerleşim 1), lint 0 hata; release APK'da dil değişimi EN → DE,
+  PIN/biyometrik kilit, 90° döndürmede oturum koruma ve yatayda başlık kaydırma elle doğrulandı.
+
+---
+
+## 🚀 Yayın hazırlığı — Play AAB, hata testleri ve CI kapıları (25 Ekim 2026)
+
+- **Play AAB:** `bundleRelease` artık release iş akışında APK ile birlikte üretiliyor;
+  `jarsigner` ile imza ve `zipalign -P 16` ile 16 KB hizalama doğrulanıyor. R8 `mapping.txt`
+  her sürümde artifact olarak saklanıyor. Yerel doğrulama: `app-release.aab` imzalı.
+- **Yedek güvenliği:** `BackupValidator` artık yalnızca tablo boyutunu değil, her satırın
+  zorunlu alanlarını, alan tiplerini, pozitif kimlikleri ve yinelenen kimlikleri de denetliyor.
+  `BackupRestoreTest` bozuk/eksik/gelecek şemalı/aşırı büyük yedeklerin mevcut veriyi silmediğini,
+  geçerli yedeğin ise fazladan kayıtları temizleyerek geri yüklendiğini doğruluyor.
+- **Ağ hataları:** `RetryInterceptorTest` (MockWebServer) 500→200 tekrarını, 429 `Retry-After`
+  davranışını, POST'un asla tekrarlanmadığını ve 3 deneme sınırını doğruluyor.
+- **Uygulama kilidi:** kilit süresi dolma yolu ve bozuk PIN özetiyle asla açılmama testleri eklendi.
+- **CI:** `ci.yml` içine API 36 / 16 KB Play Store imajlı emülatör işi eklendi; release işi
+  artifact üretmeden önce birim testi + lint kapısından geçiyor. Ayrıntılı dış adımlar
+  `docs/PLAY_YAYIN_KONTROL_LISTESI.md` içinde.
+
+---
+
+## 🎨 Görünüm temaları — 5 palet + 4 arayüz (25 Ekim 2026)
+
+- **Renk paletleri:** Sistem (zümrüt, açık/koyu), Beyaz (mavi vurgu), Siyah (saf OLED +
+  lime), Gece (mor/lavanta) ve Yeşil (orman yeşili). Her palet kendi yüzey, kap, hata ve
+  kontur renklerini tanımlar; sistem çubuklarının ikon kontrastı da palete göre ayarlanır.
+- **Arayüz stilleri:** Modern (mevcut yuvarlak kartlar), Klasik (serif tipografi, ince
+  çizgiler, fiş görünümlü özet), Kompakt (tek satırlık yoğun liste, etiketsiz alt bar) ve
+  Vitrin (iki sütunlu büyük görsel katalog). Tipografi ve köşe ölçeği stil başına değişir;
+  ana liste, Kiler, Cebim ve Prospekt/Fırsatlar ekranları kendi stil bileşenlerini kullanır,
+  market modu işlevsel olarak korunur.
+- **Seçim ekranı:** `feature/theme/ThemeScreen.kt` canlı önizleme, palet swatch'ları ve
+  stil tel kafesleri gösterir. Seçim `einkauf_theme` SharedPreferences'ında saklanır;
+  `ThemeStore` durumu Compose'da anında yayılır, süreç yeniden başlayınca korunur.
+- **Erişilebilirlik:** Tamamla eylemi tüm stillerde `SUMMARY_COMPLETE` etiketiyle, Vitrin'de
+  ayrıca üst çubukta erişilebilir kalır; 11 dilde tema adı/açıklaması eklendi.
+- **Doğrulama:** 145 birim testi, 18/18 cihaz testi (yeni `ThemeSelectionTest` dahil),
+  lint 0 hata. API 36 16 KB emülatörde beş palet ve dört stil açılıp ekran görüntüleriyle
+  kontrol edildi (`screenshots/theme-*.png`).
+
+---
+
+## 🔐 Klon/kurcalama koruması, premium lisans ve PDF rapor (25 Ekim 2026)
+
+- **İmza doğrulama:** `AppIntegrity`, çalışan APK'nın sertifika özetini yükleme anahtarı
+  ve Play App Signing anahtarıyla karşılaştırır. Başka anahtarla yeniden imzalanmış
+  (klonlanmış) APK çalışır ama premium açılmaz; kullanıcı verisini kaybetmez.
+- **Premium lisansı:** `PremiumLicense`, `BASKIT1.<payload>.<imza>` biçimindeki ECDSA P-256
+  imzalı token'ı doğrular; uygulamada yalnızca açık anahtar var. `PremiumGate` premium'u
+  yalnızca (1) imza güvenilir, (2) hata ayıklama/emülatör/Frida-Xposed izi yok ve
+  (3) lisans geçerli olduğunda açar. Yerelde `true` dönen bir bayrak yok; SharedPreferences
+  kurcalansa bile imza üretilemediği için premium açılmaz.
+- **Ayar ekranı:** "Premium" kartı durumu (etkin/kilitli/kurcalanmış/süresi dolmuş) gösterir,
+  lisans anahtarını yapıştırıp etkinleştirmeye izin verir. Geçersiz anahtar kaydedilmez.
+- **Gizli anahtar:** `license/baskit-license-private.pem` yalnızca çevrimdışı; `.gitignore`
+  ve CI'daki `Guard signing and licence secrets` adımı depoya girmesini engeller.
+- **Rapor:** hareket, Pfand ve kiler tabloları; `ReportPdfWriter` ile çevrimdışı PDF üretilip
+  FileProvider üzerinden paylaşılır (`baskit-rapor-<tarih>.pdf`).
+- **Doğrulama:** 173 birim testi (10 yeni lisans testi), 30/30 cihaz testi (yeni
+  `PremiumGateTest`, `PremiumCardTest`), lint 0 hata, imzalı APK+AAB. Emülatörde rapor →
+  PDF paylaşım sayfası ve premium kartı elle doğrulandı.
+- **Boyut:** AAB 18,4 MB; arm64 telefonda Play indirmesi ~9,5 MB (ML Kit ABI bölünmesi).
+
+---
+
+## 🧾 Pfand iade kısayolu — "Tümünü iade et" (25 Ekim 2026)
+
+- **Kısayol:** İade diyaloğunda tutar alanının altına "Tümünü iade et" eklendi; tek
+  dokunuşla bekleyen toplam (`PfandAmount.format`) yazılır ve plan özeti anında
+  "N adet iade · kalan 0" gösterir. Bekleyen kayıt yoksa düğme pasiftir.
+- **Tek kaynak:** Kısayolun yazdığı tutar `PfandReturnPlanner.unitCents` ile
+  hesaplanan bekleyen toplamdan gelir; planlayıcının "tamamı istendi" hızlı yolu
+  devreye girdiği için tamamı iade edilir, kayan nokta farkı kalmaz.
+- **Ondalık ayırıcı:** Alan artık cihazın/uygulama dilinin ayırıcısını gösteriyor
+  (`PfandAmount.separatorFor`): tr/de/nl'de "25,00", en/zh'de "25.00". Virgül de
+  nokta da yazılabiliyor, değer seçili ayırıcıya normalize edilip aynı sente çözülüyor;
+  kısayol da aynı ayırıcıyı kullanıyor.
+- **Çeviri:** 11 dilde eklendi (`pfand_return_all`).
+- **Doğrulama:** Yeni birim testi (`PfandAmount.format` gidiş-dönüş) ve iki Compose
+  testi (kısayol 25,00 € → 100 adet → 2.500 sent onayı; kayıt yokken pasiflik).
+  32 cihaz testi geçti; emülatörde 100 × 0,25 € için kısayol → "Take return" →
+  bekleyen 0 € ve iade geçmişi 25,00 € olarak elle doğrulandı.

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baskit — Privacy Policy</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0 auto; max-width: 46rem; padding: 2.5rem 1.25rem 4rem;
+         font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin-bottom: .25rem; }
+  h2 { font-size: 1.15rem; margin-top: 2rem; }
+  .meta { opacity: .7; font-size: .9rem; }
+  nav a { margin-right: 1rem; }
+  a { color: #0b6b4f; }
+  @media (prefers-color-scheme: dark) { a { color: #6fd3b0; } }
+</style>
+</head>
+<body>
+<nav><a href="./index.html">Legal overview</a><a href="./terms.html">Terms of use</a></nav>
+<h1>Privacy Policy</h1>
+<p class="meta">Baskit for Android (package <code>com.shoppingapp</code>) · Last updated: 25 October 2026</p>
+
+<p>Baskit is a shopping-list app that works on your device. It does not create user
+accounts, does not show advertising, and does not include analytics, tracking or
+crash-reporting SDKs.</p>
+
+<h2>Data stored on your device</h2>
+<p>The app stores your shopping list, pantry stock, purchase history, budget and
+Pfand entries, saved offers, cached flyer pages and local backups in its private
+app storage. This data is not uploaded to a server operated by the developer.</p>
+
+<p>PDF reports are created on the device and kept in the app cache until you share
+them or clear app data. If you activate an optional premium licence, only the
+signed licence token is stored locally; it contains no payment details.</p>
+
+<h2>Network requests</h2>
+<p>The app makes network requests only for app functionality:</p>
+<ul>
+  <li><strong>Barcode lookup:</strong> the barcode you scan is sent to
+      <code>world.openfoodfacts.org</code> to retrieve a product name.</li>
+  <li><strong>Flyers:</strong> opening the offers screen requests
+      <code>marktguru.de</code> and its image CDN to download publicly available
+      flyer pages.</li>
+</ul>
+<p>Like any internet request, these requests necessarily include your IP address
+and a user-agent string. No account identifier, contact detail or shopping-list
+content is included. The providers process requests under their own privacy
+policies.</p>
+
+<h2>Permissions</h2>
+<ul>
+  <li><strong>Camera</strong> (optional): used only to scan barcodes and receipts.
+      Photos are processed on the device and are not uploaded by the app.</li>
+  <li><strong>Notifications</strong> (optional): used only for reminders you enable.</li>
+  <li><strong>Internet</strong>: required for barcode lookup and flyers.</li>
+</ul>
+
+<h2>Backups</h2>
+<p>You can export your data as a JSON file to a location you choose (for example
+Google Drive or Downloads), and the app keeps up to five automatic local backups
+in its private storage. Backup files are <strong>not encrypted</strong>; anyone
+with access to the file can read it. Share backups only with people you trust.</p>
+
+<h2>Retention and deletion</h2>
+<p>Data stays on your device until you delete it. In the app, open
+<em>Backup and settings</em> and choose <em>Delete all data</em> to permanently
+remove the database, local backups, cached flyer images and the crash log.
+Uninstalling the app also removes its private data. Exported backup files remain
+wherever you saved them and must be deleted separately.</p>
+
+<h2>Diagnostics</h2>
+<p>If the app crashes, a technical log (app version, Android version, thread name
+and stack trace) is written to private app storage. It contains no shopping data
+and is only shared if you explicitly tap <em>Share diagnostic log</em>.</p>
+
+<h2>Children</h2>
+<p>The app is not directed to children and does not knowingly collect personal
+information from children.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, the updated version will be published at this address
+with a new date.</p>
+
+<h2>Contact</h2>
+<p>For privacy questions, use the developer contact email shown on the app's
+Google Play listing. You can also open an issue in the project repository.</p>
+</body>
+</html>

@@ -2,9 +2,10 @@ package com.shoppingapp.data.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "products")
+@Entity(tableName = "products", indices = [Index("barcode")])
 data class Product(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
@@ -35,7 +36,7 @@ data class Category(
     val colorHex: String
 )
 
-@Entity(tableName = "list_items")
+@Entity(tableName = "list_items", indices = [Index("isPurchased"), Index("productId")])
 data class ListItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val productId: Long,
@@ -45,7 +46,7 @@ data class ListItem(
     val addedAt: Long
 )
 
-@Entity(tableName = "pantry_items")
+@Entity(tableName = "pantry_items", indices = [Index("productId")])
 data class PantryItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val productId: Long,
@@ -54,7 +55,7 @@ data class PantryItem(
     val expiryDate: Long?
 )
 
-@Entity(tableName = "purchase_history")
+@Entity(tableName = "purchase_history", indices = [Index("purchaseDate")])
 data class PurchaseHistory(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val storeId: Long,
@@ -63,7 +64,7 @@ data class PurchaseHistory(
     val purchaseDate: Long
 )
 
-@Entity(tableName = "pfand_entries")
+@Entity(tableName = "pfand_entries", indices = [Index("isReturned")])
 data class PfandEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val label: String,
@@ -73,7 +74,10 @@ data class PfandEntry(
     val isReturned: Boolean = false
 )
 
-@Entity(tableName = "purchase_history_items")
+@Entity(
+    tableName = "purchase_history_items",
+    indices = [Index("historyId"), Index("productId")]
+)
 data class PurchaseHistoryItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val historyId: Long,
@@ -86,7 +90,7 @@ data class PurchaseHistoryItem(
  * Cebimdeki para hareketi. Bakiye ayrı bir kolonda tutulmaz; hesabın bakiyesi
  * hareketlerin toplamıdır, böylece her + / − işlemi geçmişte tek tek görünür ve geri alınabilir.
  */
-@Entity(tableName = "money_entries")
+@Entity(tableName = "money_entries", indices = [Index("createdAt")])
 data class MoneyEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     /** [MoneyAccount.CASH] veya [MoneyAccount.BANK]. */
@@ -110,7 +114,7 @@ object MoneyAccount {
  * Prospektüsten tıklanarak eklenen geçici fırsat ürünü. Normal alışveriş listesinden
  * ayrı tutulur çünkü fiyatı ve son geçerlilik tarihi broşüre bağlıdır.
  */
-@Entity(tableName = "flyer_list_items")
+@Entity(tableName = "flyer_list_items", indices = [Index("validToEpochMs")])
 data class FlyerListItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val offerId: Long,

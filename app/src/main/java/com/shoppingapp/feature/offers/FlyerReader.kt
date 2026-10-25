@@ -44,6 +44,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -64,6 +65,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.imageLoader
 import coil.request.ImageRequest
+import com.shoppingapp.R
 import com.shoppingapp.data.offers.Flyer
 import com.shoppingapp.data.offers.FlyerOffer
 import com.shoppingapp.data.offers.FlyerPageUrls
@@ -140,16 +142,16 @@ fun FlyerReaderDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.s_kapat), tint = Color.White)
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "${store.name} Prospektü",
+                        stringResource(R.string.p_x_prospektu, store.name),
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "${FlyerDateLabel.range(flyer)} · ${flyer.pageCount} sayfa",
+                        stringResource(R.string.p_x_x_sayfa, FlyerDateLabel.range(flyer), flyer.pageCount),
                         color = ReaderMuted,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall
                     )
@@ -158,7 +160,7 @@ fun FlyerReaderDialog(
                     val intent = Intent(Intent.ACTION_VIEW, store.pageUrl.toUri())
                     if (intent.resolveActivity(context.packageManager) != null) context.startActivity(intent)
                 }) {
-                    Icon(Icons.Default.OpenInNew, contentDescription = "Resmî sayfada aç", tint = Color.White)
+                    Icon(Icons.Default.OpenInNew, contentDescription = stringResource(R.string.s_resmi_sayfada_ac), tint = Color.White)
                 }
             }
             Divider(color = Color.White.copy(alpha = 0.12f))
@@ -191,19 +193,21 @@ fun FlyerReaderDialog(
                         }
                     }
                 ) {
-                    Text("← Önceki", color = Color.White)
+                    Text(stringResource(R.string.s_onceki), color = Color.White)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        "${pagerState.currentPage + 1} / ${flyer.pageCount}",
+                        stringResource(R.string.p_x_x_3, pagerState.currentPage + 1, flyer.pageCount),
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
                         when {
-                            offersLoading && currentOffers.isEmpty() -> "Ürünler yükleniyor…"
-                            currentOffers.any { it.hotspot != null } -> "＋ işaretli ürüne dokun"
-                            else -> "Kaydır · çift dokun ve yakınlaştır"
+                            offersLoading && currentOffers.isEmpty() ->
+                                stringResource(R.string.reader_loading)
+                            currentOffers.any { it.hotspot != null } ->
+                                stringResource(R.string.reader_tap_product)
+                            else -> stringResource(R.string.reader_gesture_hint)
                         },
                         color = ReaderMuted,
                         style = androidx.compose.material3.MaterialTheme.typography.bodySmall
@@ -218,7 +222,7 @@ fun FlyerReaderDialog(
                         }
                     }
                 ) {
-                    Text("Sonraki →", color = Color.White)
+                    Text(stringResource(R.string.s_sonraki), color = Color.White)
                 }
             }
         }
@@ -359,7 +363,7 @@ private fun FlyerPageImage(
             ) {
                 Image(
                     painter = painter,
-                    contentDescription = "Prospektüs sayfası ${index + 1}",
+                    contentDescription = stringResource(R.string.p_prospektus_sayfasi_x, index + 1),
                     contentScale = ContentScale.FillBounds,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -385,8 +389,7 @@ private fun FlyerPageImage(
                                 .border(1.dp, Color(0x55000000), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                "+",
+                            Text(stringResource(R.string.s_metin),
                                 color = Color(0xFF17352C),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Black
@@ -401,7 +404,7 @@ private fun FlyerPageImage(
             // kadar "yükleniyor" durumunda kalıyordu.
             Image(
                 painter = painter,
-                contentDescription = "Prospektüs sayfası ${index + 1}",
+                contentDescription = stringResource(R.string.p_prospektus_sayfasi_x, index + 1),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
@@ -410,15 +413,14 @@ private fun FlyerPageImage(
         when (painter.state) {
             is AsyncImagePainter.State.Loading -> CircularProgressIndicator(color = Color.White)
             is AsyncImagePainter.State.Error -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Sayfa yüklenemedi", color = Color.White, fontWeight = FontWeight.SemiBold)
-                Text(
-                    "İnternet bağlantını kontrol et.",
+                Text(stringResource(R.string.s_sayfa_yuklenemedi), color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.s_internet_baglantini_kontrol_et),
                     color = ReaderMuted,
                     style = androidx.compose.material3.MaterialTheme.typography.bodySmall
                 )
                 TextButton(onClick = { retryKey++ }) {
                     Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White)
-                    Text("  Yeniden dene", color = Color.White)
+                    Text(stringResource(R.string.s_yeniden_dene), color = Color.White)
                 }
             }
 
