@@ -36,8 +36,8 @@ android {
         // Her yeni sürümde versionCode'u ARTIR (telefon "güncelleme" olarak algılar, veriler kalır).
         // CI / telefondan tetiklenen derlemelerde kod düzenlemeden üzerine yazılabilir:
         //   ./gradlew :app:assembleRelease -PversionCode=6 -PversionName=1.5
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 16
-        versionName = (findProperty("versionName") as String?) ?: "3.0"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 17
+        versionName = (findProperty("versionName") as String?) ?: "3.1"
         testInstrumentationRunner = "com.shoppingapp.testing.KorbTestRunner"
 
         // Google ile giriş, Google Cloud'da oluşturulan **Web** OAuth istemcisinin
