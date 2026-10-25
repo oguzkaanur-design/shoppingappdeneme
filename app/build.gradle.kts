@@ -125,8 +125,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.7")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.57.2")
-    kapt("com.google.dagger:hilt-compiler:2.57.2")
+    implementation("com.google.dagger:hilt-android:2.60.1")
+    kapt("com.google.dagger:hilt-compiler:2.60.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // WorkManager (hatırlatıcı bildirimleri)
