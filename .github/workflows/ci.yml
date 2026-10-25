@@ -130,18 +130,56 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          # Emülatör/ADB kaynaklı dalgalanmalar için tek yeniden deneme. İkinci
-          # tur da kalırsa iş kırmızıya döner; yani gerçek bir hata gizlenmez.
+          # pixel_6 profilinin varsayılan 2 GB RAM'i Play Store imajı, GMS ve
+          # test edilen uygulamaya yetmiyordu: çekirdek min watermark'a düşüp
+          # lowmemorykiller'ı tetikliyor, com.shoppingapp sürecini öldürüyor ve
+          # koşu "Process crashed" ile bitiyordu (ilk test çöküp kalan 31 test
+          # hiç çalışmıyordu). 4 GB RAM bu baskıyı kaldırır.
+          ram-size: 4096
+          heap-size: 512
+          cores: 4
+          emulator-boot-timeout: 900
+          emulator-options: >-
+            -no-window -no-snapshot -gpu swiftshader_indirect -noaudio
+            -no-boot-anim -camera-back none
+          # android-emulator-runner betiği /usr/bin/sh (dash) ile çalıştırır;
+          # dash `set -o pipefail` bilmez ve adım anında düşerdi. Bu yüzden
+          # burada POSIX uyumlu komutlar kullanılır.
           script: |
-            set -o pipefail
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain || {
-              echo "::warning::İlk tur başarısız; emülatör/ADB kaynaklı olabilir, bir kez yeniden deneniyor."
-              adb kill-server || true
-              adb start-server || true
-              sleep 20
-              ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain
-            }
+            adb shell cat /proc/meminfo | head -3
+            timeout 180 adb shell am wait-for-broadcast-idle || true
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain
+
+      # Günlükler herkese açık olmadığından başarısız testi doğrudan
+      # Checks sekmesine düşürür: indirilecek artefakt olmadan da görünür.
+      - name: Surface failing tests as annotations
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          reported = 0
+          for path in glob.glob(
+              "app/build/outputs/androidTest-results/connected/**/TEST-*.xml",
+              recursive=True,
+          ):
+              try:
+                  root = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              for case in root.iter("testcase"):
+                  failure = case.find("failure")
+                  if failure is None or reported >= 5:
+                      continue
+                  detail = (failure.get("message") or failure.text or "ayrıntı yok").strip()
+                  first_line = detail.splitlines()[0][:280] if detail else "ayrıntı yok"
+                  name = f"{case.get('classname')}.{case.get('name')}"
+                  print(f"::error::Test başarısız: {name} — {first_line}")
+                  reported += 1
+          if reported == 0:
+              print("::error::connectedDebugAndroidTest başarısız; test sonucu dosyası yok (derleme, kurulum veya emülatör hatası).")
+          PY
 
       - name: Upload instrumented test reports
         if: always()
