@@ -148,8 +148,8 @@ jobs:
           AAB=app/build/outputs/bundle/release/app-release.aab
           META=app/build/outputs/apk/release/output-metadata.json
           VERSION=$(python3 -c "import json;e=json.load(open('$META'))['elements'][0];print(f\"{e['versionName']}-v{e['versionCode']}\")")
-          NAME="shoppingapp-$VERSION.apk"
-          AAB_NAME="shoppingapp-$VERSION.aab"
+          NAME="Baskit-$VERSION.apk"
+          AAB_NAME="Baskit-$VERSION.aab"
           cp "$APK" "$NAME"
           cp "$AAB" "$AAB_NAME"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
@@ -158,14 +158,14 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: shoppingapp-release-apk
+          name: baskit-release-apk
           path: ${{ steps.apk.outputs.name }}
           if-no-files-found: error
 
       - name: Upload AAB artifact (Play Console)
         uses: actions/upload-artifact@v4
         with:
-          name: shoppingapp-release-aab
+          name: baskit-release-aab
           path: ${{ steps.apk.outputs.aab_name }}
           if-no-files-found: error
 
@@ -174,7 +174,7 @@ jobs:
       - name: Upload R8 mapping
         uses: actions/upload-artifact@v4
         with:
-          name: shoppingapp-r8-mapping
+          name: baskit-r8-mapping
           path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: error
 
