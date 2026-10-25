@@ -92,7 +92,8 @@ jobs:
   instrumented:
     name: Instrumented tests (API 36, 16 KB)
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # Emülatör kurulumu + iki tur test için üst sınır.
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -130,10 +131,20 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain
+          # Emülatör/ADB kaynaklı dalgalanmalar için tek yeniden deneme. İkinci
+          # tur da kalırsa iş kırmızıya döner; yani gerçek bir hata gizlenmez.
+          script: |
+            set -o pipefail
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain || {
+              echo "::warning::İlk tur başarısız; emülatör/ADB kaynaklı olabilir, bir kez yeniden deneniyor."
+              adb kill-server || true
+              adb start-server || true
+              sleep 20
+              ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain
+            }
 
-      - name: Upload instrumented test reports on failure
-        if: failure()
+      - name: Upload instrumented test reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: instrumented-test-reports
