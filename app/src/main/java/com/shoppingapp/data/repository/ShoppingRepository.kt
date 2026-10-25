@@ -1,6 +1,7 @@
 package com.shoppingapp.data.repository
 
 import com.shoppingapp.data.catalog.BrandCatalog
+import com.shoppingapp.data.catalog.ProductAvatars
 import com.shoppingapp.data.dao.ShoppingDao
 import com.shoppingapp.data.local.SeedState
 import com.shoppingapp.data.model.*
@@ -145,6 +146,14 @@ class ShoppingRepository @Inject constructor(
 
     suspend fun addProduct(product: Product): Long = shoppingDao.insertProduct(product)
 
+    /** Listede avatarı değişen ürün; anahtar null ise otomatik tahmine dönülür. */
+    suspend fun setProductAvatar(productId: Long, avatarKey: String?) =
+        shoppingDao.setProductAvatar(productId, avatarKey)
+
+    /** Ad → kategori: önce avatar kataloğu (daha geniş), sonra marka kataloğu. */
+    private fun detectCategory(name: String): Long =
+        ProductAvatars.categoryFor(name) ?: BrandCatalog.detectCategory(name) ?: 0L
+
     suspend fun addListItem(productId: Long, storeId: Long, quantity: Double): Long {
         return shoppingDao.insertListItem(
             ListItem(
@@ -193,7 +202,7 @@ class ShoppingRepository @Inject constructor(
                     Product(
                         name = name,
                         barcode = "IMPORT_${System.currentTimeMillis()}_$added",
-                        categoryId = BrandCatalog.detectCategory(name) ?: 0L,
+                        categoryId = detectCategory(name),
                         unit = line.unit,
                         priceEuro = 0.0
                     )
@@ -244,8 +253,7 @@ class ShoppingRepository @Inject constructor(
                 name = cleanName,
                 barcode = "PANTRY_${System.currentTimeMillis()}",
                 categoryId = categoryId.takeIf { it > 0L }
-                    ?: BrandCatalog.detectCategory(cleanName)
-                    ?: 0L,
+                    ?: detectCategory(cleanName),
                 unit = unit.ifBlank { "Adet" },
                 defaultStoreId = storeId.takeIf { it > 0L },
                 priceEuro = priceEuro.coerceAtLeast(0.0)
@@ -430,7 +438,7 @@ class ShoppingRepository @Inject constructor(
                     Product(
                         name = line.name,
                         barcode = "RECEIPT_${System.currentTimeMillis()}_$index",
-                        categoryId = BrandCatalog.detectCategory(line.name) ?: 0L,
+                        categoryId = detectCategory(line.name),
                         unit = "Adet",
                         defaultStoreId = storeId.takeIf { it > 0L },
                         priceEuro = line.unitPrice

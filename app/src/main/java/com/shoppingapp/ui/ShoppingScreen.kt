@@ -47,12 +47,14 @@ import com.shoppingapp.R
 import com.shoppingapp.data.aisle.AisleGroup
 import com.shoppingapp.data.aisle.AisleOrder
 import com.shoppingapp.data.model.Category
+import com.shoppingapp.data.model.Product
 import com.shoppingapp.data.model.Store
 import com.shoppingapp.feature.share.ListShare
 import com.shoppingapp.feature.share.ShareStrings
 import com.shoppingapp.feature.share.ShareLine
 import com.shoppingapp.data.repository.PurchaseReceipt
 import com.shoppingapp.ui.components.AddProductSheet
+import com.shoppingapp.ui.components.ProductAvatarPickerDialog
 import com.shoppingapp.ui.components.ProductThumb
 import com.shoppingapp.ui.theme.AppUiStyle
 import com.shoppingapp.ui.theme.LocalAppUiStyle
@@ -87,6 +89,8 @@ fun ShoppingScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var marketMode by remember { mutableStateOf(false) }
+    // Simgesine dokunulan ürün; seçim tek bir diyalogda yapılır.
+    var avatarTarget by remember { mutableStateOf<Product?>(null) }
     val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val uiStyle = LocalAppUiStyle.current
     val isGallery = uiStyle == AppUiStyle.GALLERY
@@ -380,6 +384,7 @@ fun ShoppingScreen(
                     onToggle = { item -> viewModel.togglePurchased(item.listItem) },
                     onDelete = { item -> viewModel.deleteItem(item.listItem) },
                     onQuantityChange = { item, delta -> viewModel.changeQuantity(item.listItem, delta) },
+                    onAvatarClick = { product -> avatarTarget = product },
                     onClearPurchased = viewModel::clearPurchased
                 )
             } else {
@@ -471,7 +476,8 @@ fun ShoppingScreen(
                                     item = item,
                                     onToggle = { viewModel.togglePurchased(item.listItem) },
                                     onDelete = { viewModel.deleteItem(item.listItem) },
-                                    onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) }
+                                    onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) },
+                                    onAvatarClick = { product -> avatarTarget = product }
                                 )
                             }
                         }
@@ -503,7 +509,8 @@ fun ShoppingScreen(
                                 item = item,
                                 onToggle = { viewModel.togglePurchased(item.listItem) },
                                 onDelete = { viewModel.deleteItem(item.listItem) },
-                                onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) }
+                                onQuantityChange = { delta -> viewModel.changeQuantity(item.listItem, delta) },
+                                onAvatarClick = { product -> avatarTarget = product }
                             )
                         }
                     }
@@ -548,6 +555,19 @@ fun ShoppingScreen(
 
     receipt?.let {
         ReceiptDialog(receipt = it, onDismiss = viewModel::dismissReceipt)
+    }
+
+    avatarTarget?.let { product ->
+        ProductAvatarPickerDialog(
+            productName = product.name,
+            currentKey = product.avatarKey,
+            categories = uiState.categories,
+            onDismiss = { avatarTarget = null },
+            onSelect = { key ->
+                viewModel.changeAvatar(product, key)
+                avatarTarget = null
+            }
+        )
     }
 }
 
@@ -772,7 +792,8 @@ fun ShoppingItemCard(
     item: UiShoppingItem,
     onToggle: () -> Unit,
     onDelete: () -> Unit,
-    onQuantityChange: (Double) -> Unit
+    onQuantityChange: (Double) -> Unit,
+    onAvatarClick: ((Product) -> Unit)? = null
 ) {
     val isPurchased = item.listItem.isPurchased
     val container = if (isPurchased) {
@@ -805,7 +826,8 @@ fun ShoppingItemCard(
                 product = item.product,
                 modifier = Modifier
                     .size(46.dp)
-                    .alpha(if (isPurchased) 0.55f else 1f)
+                    .alpha(if (isPurchased) 0.55f else 1f),
+                onClick = onAvatarClick?.let { click -> { click(item.product) } }
             )
 
             Column(
@@ -1348,14 +1370,16 @@ private fun StyleShoppingItem(
     item: UiShoppingItem,
     onToggle: () -> Unit,
     onDelete: () -> Unit,
-    onQuantityChange: (Double) -> Unit
+    onQuantityChange: (Double) -> Unit,
+    onAvatarClick: ((Product) -> Unit)? = null
 ) {
     when (style) {
         AppUiStyle.MODERN -> ShoppingItemCard(
             item = item,
             onToggle = onToggle,
             onDelete = onDelete,
-            onQuantityChange = onQuantityChange
+            onQuantityChange = onQuantityChange,
+            onAvatarClick = onAvatarClick
         )
 
         AppUiStyle.CLASSIC -> ClassicShoppingItem(
@@ -1369,7 +1393,8 @@ private fun StyleShoppingItem(
             item = item,
             onToggle = onToggle,
             onDelete = onDelete,
-            onQuantityChange = onQuantityChange
+            onQuantityChange = onQuantityChange,
+            onAvatarClick = onAvatarClick
         )
 
         // Vitrin düzeni kendi iki sütunlu ızgarasını kullanır.

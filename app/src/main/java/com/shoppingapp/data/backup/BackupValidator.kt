@@ -61,7 +61,9 @@ internal object BackupValidator {
             Field("defaultStoreId", FieldType.NUMBER, nullable = true),
             Field("pfandAmount", FieldType.NUMBER),
             // Eski yedeklerde bu alan yoksa Gson 0.0'a düşürür.
-            Field("priceEuro", FieldType.NUMBER, nullable = true)
+            Field("priceEuro", FieldType.NUMBER, nullable = true),
+            // Kullanıcının seçtiği avatar; eski yedeklerde yoksa otomatik tahmin kullanılır.
+            Field("avatarKey", FieldType.STRING, nullable = true)
         ),
         "stores" to listOf(
             Field("id", FieldType.NUMBER),

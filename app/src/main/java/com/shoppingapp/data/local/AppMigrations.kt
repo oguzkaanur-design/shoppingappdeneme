@@ -91,12 +91,24 @@ object AppMigrations {
         }
     }
 
+    /**
+     * v8, kullanıcının seçtiği ürün avatarını saklar. Kolon boş (NULL) kalabilir:
+     * o durumda simge ürün adından ve kategoriden üretilir, yani eski kayıtlar da
+     * yeni tahminden yararlanır.
+     */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE `products` ADD COLUMN `avatarKey` TEXT")
+        }
+    }
+
     /** `Room.databaseBuilder(...).addMigrations(*AppMigrations.ALL)` için sıralı liste. */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_2_3,
         MIGRATION_3_4,
         MIGRATION_4_5,
         MIGRATION_5_6,
-        MIGRATION_6_7
+        MIGRATION_6_7,
+        MIGRATION_7_8
     )
 }

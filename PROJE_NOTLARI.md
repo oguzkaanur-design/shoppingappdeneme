@@ -385,3 +385,31 @@ Tasarım yönü `ui-ux-pro-max` skill'inin ürettiği "fresh green + food amber"
   testi (kısayol 25,00 € → 100 adet → 2.500 sent onayı; kayıt yokken pasiflik).
   32 cihaz testi geçti; emülatörde 100 × 0,25 € için kısayol → "Take return" →
   bekleyen 0 € ve iade geçmişi 25,00 € olarak elle doğrulandı.
+
+---
+
+## 🍅 Ürün avatarları ve otomatik ürün tanıma (25 Ekim 2026)
+
+- **Sorun:** Liste her ürün için aynı 🛒 simgesini gösteriyordu. Eski eşleştirme tek
+  dizede alt dize arıyordu; bu yüzden `ei` (yumurta) "Reiniger" içinde eşleşebiliyor,
+  tanınmayan her ürün de arabaya düşüyordu.
+- **Katalog:** `ProductAvatars` 60'tan fazla ürün grubunu (meyve, sebze, fırın, et,
+  süt ürünleri, içecek, atıştırmalık, temizlik, kozmetik, evcil hayvan, araç gereç…)
+  Türkçe/Almanca/İngilizce anahtar sözcüklerle tanımlar. Grup hem emojiyi hem de
+  mevcut 5 kategori kimliğini taşır; ürün eklerken kategori de buradan seçilir.
+- **Eşleştirme:** Tam kelime > kelime başı > Almanca bileşik sonu ("Vollkorn-brot") >
+  Türkçe ek ("Ekmeği" ≈ "ekmek") > kısaltma. İki kelimeli kalıplar tek kelimeyi yener
+  ("Elma suyu" → meyve suyu, "Maden suyu" → su). `ei` gibi kısa sözcükler yalnız tam
+  kelime olarak eşleşir.
+- **Seçim:** Listede simgeye dokunmak `ProductAvatarPickerDialog`'u açar; simgeler
+  kategori başlıkları altında ızgarada listelenir, "Otomatik" seçimi temizler. Seçim
+  `products.avatarKey` kolonunda saklanır (Room v8 göçü, yedekte isteğe bağlı alan);
+  boşsa simge yine addan, o da yoksa kategoriden üretilir. Bu yüzden eski kayıtlar da
+  düzeltmeden sonra doğru simgeyi alır.
+- **Görsel:** Simge artık kutunun boyuna göre ölçeklenir (kompakt 30 dp satırda taşmıyor,
+  vitrin ızgarasında büyüyor); barkodla bulunmuş gerçek ürün fotoğrafı varsa fotoğraf kalır.
+- **Çeviri:** Seçim başlığı 11 dilde eklendi (`s_avatar_sec`).
+- **Doğrulama:** 215 birim testi (yeni `ProductAvatarsTest`: tanıma, kısa sözcük tuzağı,
+  kalıp/ek eşleşmesi, kullanıcı seçiminin önceliği), Room 7→8 göç testi ve yeni cihaz
+  testi (`ProductAvatarPickerTest`: 🍅 → dokun → 🧀 seç → veritabanı ve liste güncel →
+  "Otomatik" → tekrar 🍅). 35/35 cihaz testi, lint 0 hata.

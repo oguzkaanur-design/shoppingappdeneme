@@ -152,6 +152,7 @@
     <string name="s_orn_sut_yumurta">e.g. milk, eggs</string>
     <string name="s_orn_yogurt_sut_mineralwasser">e.g. yogurt, milk, mineral water</string>
     <string name="s_otomatik">Automatic</string>
+    <string name="s_avatar_sec">Избор на икона</string>
     <string name="s_paylasilan_liste">Shared list</string>
     <string name="s_pfand">Депозит</string>
     <string name="s_pfand_detaylari">Deposit details</string>

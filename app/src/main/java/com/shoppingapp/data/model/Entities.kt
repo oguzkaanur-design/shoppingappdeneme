@@ -16,7 +16,12 @@ data class Product(
     val defaultStoreId: Long? = null,
     val pfandAmount: Double = 0.0,
     @ColumnInfo(defaultValue = "0")
-    val priceEuro: Double = 0.0
+    val priceEuro: Double = 0.0,
+    /**
+     * Kullanıcının seçtiği avatar anahtarı (bkz. ProductAvatars).
+     * Boşsa liste, ürün adından ve kategoriden simgeyi kendisi seçer.
+     */
+    val avatarKey: String? = null
 )
 
 @Entity(tableName = "stores")

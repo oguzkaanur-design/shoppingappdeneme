@@ -36,6 +36,10 @@ interface ShoppingDao {
     @Query("SELECT * FROM products WHERE name = :name COLLATE NOCASE LIMIT 1")
     suspend fun findProductByName(name: String): Product?
 
+    /** Kullanıcı listede avatarı değiştirdiğinde yalnız o kolon güncellenir. */
+    @Query("UPDATE products SET avatarKey = :avatarKey WHERE id = :productId")
+    suspend fun setProductAvatar(productId: Long, avatarKey: String?)
+
     @Query("SELECT * FROM products")
     fun getAllProducts(): Flow<List<Product>>
 

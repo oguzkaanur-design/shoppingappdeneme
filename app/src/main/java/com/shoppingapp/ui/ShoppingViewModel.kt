@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.shoppingapp.data.aisle.AisleOrder
 import com.shoppingapp.data.catalog.BrandCatalog
+import com.shoppingapp.data.catalog.ProductAvatars
 import com.shoppingapp.data.model.*
 import com.shoppingapp.data.repository.PurchaseLine
 import com.shoppingapp.data.repository.PurchaseReceipt
@@ -158,7 +159,9 @@ class ShoppingViewModel @Inject constructor(
         viewModelScope.launch {
             val resolvedCategory = when {
                 categoryId > 0L -> categoryId
-                else -> BrandCatalog.detectCategory(cleanName) ?: 0L
+                else -> ProductAvatars.categoryFor(cleanName)
+                    ?: BrandCatalog.detectCategory(cleanName)
+                    ?: 0L
             }
             val product = Product(
                 name = cleanName,
@@ -172,6 +175,17 @@ class ShoppingViewModel @Inject constructor(
             )
             val productId = repository.addProduct(product)
             repository.addListItem(productId = productId, storeId = storeId, quantity = quantity)
+            widgetUpdater.refresh()
+        }
+    }
+
+    /**
+     * Listede ürünün avatarına dokunulunca çağrılır.
+     * @param avatarKey null → otomatik (addan) tahmine dön.
+     */
+    fun changeAvatar(product: Product, avatarKey: String?) {
+        viewModelScope.launch {
+            repository.setProductAvatar(product.id, avatarKey)
             widgetUpdater.refresh()
         }
     }

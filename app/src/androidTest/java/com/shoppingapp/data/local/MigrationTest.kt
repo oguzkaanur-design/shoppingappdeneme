@@ -35,7 +35,14 @@ class MigrationTest {
     private val context: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
-    private val allTestDbs = listOf(DB_FROM_V6, DB_FROM_V5, DB_FROM_V3, DB_FROM_V2, DB_UNKNOWN_VERSION)
+    private val allTestDbs = listOf(
+        DB_FROM_V7,
+        DB_FROM_V6,
+        DB_FROM_V5,
+        DB_FROM_V3,
+        DB_FROM_V2,
+        DB_UNKNOWN_VERSION
+    )
 
     @After
     fun tearDown() {
@@ -218,6 +225,57 @@ class MigrationTest {
     }
 
     /**
+     * v7'den yükseltme: `avatarKey` kolonu eklenir. Eski ürünlerde kolon boş kalır,
+     * yani simge yine ürün adından tahmin edilir; liste ve fiyatlar korunur.
+     */
+    @Test
+    fun v7denV8eGecisAvatarSeciminiEklerVeVeriyiKorur() {
+        deleteDatabase(DB_FROM_V7)
+
+        helper.createDatabase(DB_FROM_V7, 7).use { db ->
+            db.execSQL(
+                "INSERT INTO categories (id, nameDe, nameTr, iconName, colorHex) " +
+                    "VALUES (2, 'Milch', 'Süt', 'milk', '#2196F3')"
+            )
+            db.execSQL(
+                "INSERT INTO products (id, name, barcode, categoryId, imageUrl, unit, defaultStoreId, " +
+                    "pfandAmount, priceEuro) " +
+                    "VALUES (1, 'Vollmilch', '4001234567890', 2, NULL, 'L', NULL, 0.25, 1.19)"
+            )
+            db.execSQL(
+                "INSERT INTO list_items (id, productId, storeId, quantity, isPurchased, addedAt) " +
+                    "VALUES (1, 1, 0, 2.0, 0, 1234)"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB_FROM_V7, 8, true, AppMigrations.MIGRATION_7_8)
+
+        val database = DatabaseModule.buildDatabase(context, DB_FROM_V7)
+        try {
+            val dao = database.shoppingDao()
+            runBlocking {
+                val product = dao.getProductById(1)
+                assertNotNull("Ürün yükseltmede kaybolmamalı", product)
+                assertEquals("Vollmilch", product!!.name)
+                assertEquals("Fiyat korunmalı", 1.19, product.priceEuro, 0.0001)
+                assertEquals("Eski ürün otomatik simgeye düşmeli", null, product.avatarKey)
+                assertEquals("Liste satırı korunmalı", 1, dao.getActiveListItemsFlow().first().size)
+
+                // Kullanıcı simgeyi değiştirince yalnız o kolon yazılır.
+                dao.setProductAvatar(1L, "cheese")
+                assertEquals("Seçilen avatar saklanmalı", "cheese", dao.getProductById(1)?.avatarKey)
+                assertEquals("Ad ve fiyat değişmemeli", "Vollmilch", dao.getProductById(1)?.name)
+
+                // "Otomatik"e dönüş: kolonu boşaltmak yeterli.
+                dao.setProductAvatar(1L, null)
+                assertEquals(null, dao.getProductById(1)?.avatarKey)
+            }
+        } finally {
+            database.close()
+        }
+    }
+
+    /**
      * v2'den yükseltme: en eski hâlâ geçişi olan sürüm. Pfand tablosu eklenir, ürünler kalır.
      */
     @Test
@@ -347,6 +405,7 @@ class MigrationTest {
     }
 
     private companion object {
+        const val DB_FROM_V7 = "migration_from_v7.db"
         const val DB_FROM_V6 = "migration_from_v6.db"
         const val DB_FROM_V5 = "migration_from_v5.db"
         const val DB_FROM_V3 = "migration_from_v3.db"

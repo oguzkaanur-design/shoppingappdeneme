@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shoppingapp.R
 import com.shoppingapp.data.model.FrequentProductRow
+import com.shoppingapp.data.model.Product
 import com.shoppingapp.data.model.Store
 import com.shoppingapp.ui.components.ProductThumb
 import java.util.Locale
@@ -468,7 +469,8 @@ internal fun CompactShoppingItem(
     item: UiShoppingItem,
     onToggle: () -> Unit,
     onDelete: () -> Unit,
-    onQuantityChange: (Double) -> Unit
+    onQuantityChange: (Double) -> Unit,
+    onAvatarClick: ((Product) -> Unit)? = null
 ) {
     val purchased = item.listItem.isPurchased
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -497,7 +499,8 @@ internal fun CompactShoppingItem(
                 modifier = Modifier
                     .size(30.dp)
                     .alpha(if (purchased) 0.5f else 1f),
-                cornerRadius = 6.dp
+                cornerRadius = 6.dp,
+                onClick = onAvatarClick?.let { click -> { click(item.product) } }
             )
             Column(modifier = Modifier.weight(1f).padding(start = 6.dp)) {
                 Text(
@@ -611,6 +614,7 @@ internal fun GalleryShoppingList(
     onToggle: (UiShoppingItem) -> Unit,
     onDelete: (UiShoppingItem) -> Unit,
     onQuantityChange: (UiShoppingItem, Double) -> Unit,
+    onAvatarClick: ((Product) -> Unit)? = null,
     onClearPurchased: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -663,7 +667,8 @@ internal fun GalleryShoppingList(
                     item = item,
                     onToggle = { onToggle(item) },
                     onDelete = { onDelete(item) },
-                    onQuantityChange = { delta -> onQuantityChange(item, delta) }
+                    onQuantityChange = { delta -> onQuantityChange(item, delta) },
+                    onAvatarClick = onAvatarClick
                 )
             }
         }
@@ -691,7 +696,8 @@ internal fun GalleryShoppingList(
                     item = item,
                     onToggle = { onToggle(item) },
                     onDelete = { onDelete(item) },
-                    onQuantityChange = { delta -> onQuantityChange(item, delta) }
+                    onQuantityChange = { delta -> onQuantityChange(item, delta) },
+                    onAvatarClick = onAvatarClick
                 )
             }
         }
@@ -771,7 +777,8 @@ private fun GalleryItemCard(
     item: UiShoppingItem,
     onToggle: () -> Unit,
     onDelete: () -> Unit,
-    onQuantityChange: (Double) -> Unit
+    onQuantityChange: (Double) -> Unit,
+    onAvatarClick: ((Product) -> Unit)? = null
 ) {
     val purchased = item.listItem.isPurchased
     Card(
@@ -799,7 +806,8 @@ private fun GalleryItemCard(
                         .fillMaxSize()
                         .padding(8.dp)
                         .alpha(if (purchased) 0.55f else 1f),
-                    cornerRadius = 18.dp
+                    cornerRadius = 18.dp,
+                    onClick = onAvatarClick?.let { click -> { click(item.product) } }
                 )
                 Surface(
                     shape = CircleShape,

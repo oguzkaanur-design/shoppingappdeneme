@@ -19,7 +19,7 @@ import com.shoppingapp.data.model.*
         FlyerListItem::class,
         MoneyEntry::class
     ],
-    version = 7,
+    version = 8,
     // Şemalar app/schemas altına yazılır; geçişler bu dosyalara karşı test edilir.
     exportSchema = true
 )
