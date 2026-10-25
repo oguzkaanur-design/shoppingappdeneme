@@ -31,8 +31,8 @@ class ReportRowsTest {
         assertEquals(listOf("Date", "Description", "Account", "Amount"), table.headers)
         assertEquals(3, table.rows.size)
         assertEquals("—", table.rows[0][1])
-        assertEquals("+€50,00", table.rows[2][3])
-        assertEquals("−€12,50", table.rows[1][3])
+        assertEquals("+50,00 €", table.rows[2][3])
+        assertEquals("−12,50 €", table.rows[1][3])
         assertEquals("Bank", table.rows[1][2])
     }
 
@@ -44,8 +44,8 @@ class ReportRowsTest {
             labels = labels
         )
         assertEquals(2, table.rows.size)
-        assertEquals(listOf("Can", "4", "€0,25", "€1,00", "Pending"), table.rows[0])
-        assertEquals(listOf("Crate", "2", "€1,50", "€3,00", "Returned"), table.rows[1])
+        assertEquals(listOf("Can", "4", "0,25 €", "1,00 €", "Pending"), table.rows[0])
+        assertEquals(listOf("Crate", "2", "1,50 €", "3,00 €", "Returned"), table.rows[1])
     }
 
     @Test
@@ -75,9 +75,9 @@ class ReportRowsTest {
     }
 
     @Test
-    fun `amounts use German formatting and whole numbers stay short`() {
+    fun `amounts use the selected currency formatting and whole numbers stay short`() {
         assertEquals("1", ReportRows.quantity(1.0))
         assertEquals("1,5", ReportRows.quantity(1.5))
-        assertEquals("€1234,50", ReportRows.euro(1234.5))
+        assertEquals("1.234,50 €", ReportRows.money(1234.5))
     }
 }

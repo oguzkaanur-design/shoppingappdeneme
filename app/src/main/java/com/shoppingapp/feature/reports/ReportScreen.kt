@@ -277,7 +277,7 @@ private fun SummaryCard(state: ReportUiState) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
             )
             Text(
-                ReportRows.euro(balances.total),
+                ReportRows.money(balances.total),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -286,11 +286,11 @@ private fun SummaryCard(state: ReportUiState) {
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                SummaryValue(stringResource(R.string.money_cash), ReportRows.euro(balances.cash))
-                SummaryValue(stringResource(R.string.money_bank), ReportRows.euro(balances.bank))
+                SummaryValue(stringResource(R.string.money_cash), ReportRows.money(balances.cash))
+                SummaryValue(stringResource(R.string.money_bank), ReportRows.money(balances.bank))
                 SummaryValue(
                     stringResource(R.string.s_pfand),
-                    ReportRows.euro(state.pfandValue),
+                    ReportRows.money(state.pfandValue),
                     hint = stringResource(R.string.report_units_value, state.pendingUnits)
                 )
             }

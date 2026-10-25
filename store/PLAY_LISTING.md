@@ -1,21 +1,21 @@
-# Baskit — Play Store yükleme metinleri
+# Korb — Play Store yükleme metinleri
 
 Paket: `com.shoppingapp` · Sürüm: 2.4 (versionCode 15) · Ücretsiz, hesap yok.
 
-> Mağazaya yüklemeden önce "Baskit" adının Play Console'da ve ilgili marka
+> Mağazaya yüklemeden önce "Korb" adının Play Console'da ve ilgili marka
 > tescilinde uygun olduğunu kontrol edin. Paket adı korunuyor; böylece mevcut
 > kurulumlar güncelleme olarak alınır ve verileri silinmez.
 
 ## Kimlik
 
-- **Uygulama adı (30 karakter):** Baskit — Shopping List & Pantry
+- **Uygulama adı (30 karakter):** Korb — Shopping List & Pantry
 - **Kısa açıklama (80 karakter):** List, pantry, deposits and budget — offline, private, no account.
 - **Kategori:** Alışveriş (Shopping)
 - **Etiketler:** shopping list, pantry, budget, deposit, groceries
 
 ## Uzun açıklama
 
-Baskit keeps groceries, pantry stock, bottle deposits and your cash budget in
+Korb keeps groceries, pantry stock, bottle deposits and your cash budget in
 one calm, offline-first app. No account, no ads, no tracking — your data stays
 on your phone.
 
@@ -40,7 +40,7 @@ on your phone.
 - Four layouts (modern, classic, compact, gallery)
 - Eleven languages, optional PIN or biometric app lock
 
-Baskit works without an internet connection. Flyers and barcode names need a
+Korb works without an internet connection. Flyers and barcode names need a
 connection; everything you enter is stored locally. Back up to a JSON file and
 move to a new phone whenever you like.
 

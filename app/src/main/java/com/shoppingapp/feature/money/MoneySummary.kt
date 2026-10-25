@@ -2,7 +2,7 @@ package com.shoppingapp.feature.money
 
 import com.shoppingapp.data.model.MoneyAccount
 import com.shoppingapp.data.model.MoneyEntry
-import java.util.Locale
+import com.shoppingapp.money.MoneyFormat
 import kotlin.math.abs
 import kotlin.math.round
 
@@ -53,24 +53,16 @@ object MoneySummary {
 /** Kullanıcının yazdığı tutarı okur: "12,50", "12.50", " 7 € " hepsi geçerli. */
 internal object MoneyInput {
 
-    fun parse(raw: String): Double? {
-        val cleaned = raw.trim()
-            .replace("€", "")
-            .replace(" ", "")
-            .replace(',', '.')
-        if (cleaned.isEmpty()) return null
-        val value = cleaned.toDoubleOrNull() ?: return null
-        if (!value.isFinite() || value <= 0.0) return null
-        return roundToCents(value)
-    }
+    fun parse(raw: String): Double? = MoneyFormat.parse(raw)
 
     fun roundToCents(value: Double): Double = round(value * 100) / 100
 }
 
-internal fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+/** Tutarı seçili para biriminde gösterir; biçim tek yerden yönetilir. */
+internal fun money(value: Double): String = MoneyFormat.amount(value)
 
-internal fun signedEuro(value: Double): String = when {
-    value > 0.0 -> "+" + euro(value)
-    value < 0.0 -> "−" + euro(abs(value))
-    else -> euro(0.0)
+internal fun signedMoney(value: Double): String = when {
+    value > 0.0 -> "+" + money(value)
+    value < 0.0 -> "−" + money(abs(value))
+    else -> money(0.0)
 }

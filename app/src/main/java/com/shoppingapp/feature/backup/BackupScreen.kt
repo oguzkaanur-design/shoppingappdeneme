@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -72,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.shoppingapp.R
+import com.shoppingapp.account.AccountStore
 import com.shoppingapp.data.backup.BackupFile
 import com.shoppingapp.feature.language.LanguageCatalog
 import com.shoppingapp.feature.language.LanguageStore
@@ -99,6 +101,7 @@ fun BackupScreen(
     onNavigateToLegal: () -> Unit,
     onNavigateToLanguage: () -> Unit,
     onNavigateToTheme: () -> Unit,
+    onNavigateToAccount: () -> Unit,
     viewModel: BackupViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -113,7 +116,7 @@ fun BackupScreen(
     val biometricAvailable = remember { AppLock.canUseBiometric(context) }
     val dateFormat = remember { SimpleDateFormat("d MMM yyyy · HH:mm", Locale.GERMANY) }
     val defaultFileName = remember {
-        "baskit-yedek-" + SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).format(Date()) + ".json"
+        "korb-yedek-" + SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).format(Date()) + ".json"
     }
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -391,6 +394,48 @@ fun BackupScreen(
                                     stringResource(colorTheme.labelRes),
                                     stringResource(uiStyle.labelRes)
                                 ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onNavigateToAccount),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.secondaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                            Text(
+                                stringResource(R.string.settings_account),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                AccountStore.current(context).email
+                                    ?: stringResource(R.string.account_signed_out),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

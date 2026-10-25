@@ -165,7 +165,7 @@ internal object BackupValidator {
         } catch (error: RuntimeException) {
             throw IllegalArgumentException("Dosya geçerli bir JSON değil.", error)
         }
-        require(parsed.isJsonObject) { "Dosya bir Baskit yedeği değil." }
+        require(parsed.isJsonObject) { "Dosya bir Korb yedeği değil." }
         val root = parsed.asJsonObject
 
         val version = root.get("schemaVersion")?.let { element ->

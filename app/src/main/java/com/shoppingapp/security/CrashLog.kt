@@ -61,7 +61,7 @@ object CrashLog {
         }.toString()
 
         val text = buildString {
-            append("Baskit ").append(BuildConfig.VERSION_NAME)
+            append("Korb ").append(BuildConfig.VERSION_NAME)
             append(" (").append(BuildConfig.VERSION_CODE).append(")\n")
             append("Android ").append(Build.VERSION.RELEASE)
             append(" / API ").append(Build.VERSION.SDK_INT).append('\n')

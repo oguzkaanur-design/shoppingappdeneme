@@ -97,9 +97,9 @@ class MoneySummaryTest {
     }
 
     @Test
-    fun `isaretli euro bicimi yon gosterir`() {
-        assertEquals("+€12,50", signedEuro(12.5))
-        assertEquals("−€12,50", signedEuro(-12.5))
-        assertEquals("€0,00", signedEuro(0.0))
+    fun `isaretli para bicimi yon gosterir`() {
+        assertEquals("+12,50 €", signedMoney(12.5))
+        assertEquals("−12,50 €", signedMoney(-12.5))
+        assertEquals("0,00 €", signedMoney(0.0))
     }
 }

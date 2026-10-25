@@ -146,7 +146,7 @@ internal fun ClassicShoppingHeader(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(euro(euroTotal), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(money(euroTotal), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
@@ -154,7 +154,7 @@ internal fun ClassicShoppingHeader(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Text(euro(pfandTotal), style = MaterialTheme.typography.titleMedium)
+                        Text(money(pfandTotal), style = MaterialTheme.typography.titleMedium)
                     }
                 }
 
@@ -299,7 +299,7 @@ internal fun CompactShoppingHeader(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                euro(euroTotal),
+                money(euroTotal),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -383,7 +383,7 @@ internal fun ClassicShoppingItem(
                         Text(
                             stringResource(
                                 R.string.p_pfand_x,
-                                euro(item.product.pfandAmount * item.listItem.quantity)
+                                money(item.product.pfandAmount * item.listItem.quantity)
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -419,7 +419,7 @@ internal fun ClassicShoppingItem(
             }
             if (item.product.priceEuro > 0) {
                 Text(
-                    euro(item.product.priceEuro * item.listItem.quantity),
+                    money(item.product.priceEuro * item.listItem.quantity),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 4.dp)
@@ -525,7 +525,7 @@ internal fun CompactShoppingItem(
                     Text(
                         stringResource(
                             R.string.p_pfand_x,
-                            euro(item.product.pfandAmount * item.listItem.quantity)
+                            money(item.product.pfandAmount * item.listItem.quantity)
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -555,7 +555,7 @@ internal fun CompactShoppingItem(
             ) { onQuantityChange(1.0) }
             if (item.product.priceEuro > 0) {
                 Text(
-                    euro(item.product.priceEuro * item.listItem.quantity),
+                    money(item.product.priceEuro * item.listItem.quantity),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 3.dp),
@@ -737,13 +737,13 @@ private fun GalleryHero(
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
                     Text(
-                        euro(euroTotal),
+                        money(euroTotal),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        stringResource(R.string.p_pfand_x, euro(pfandTotal)),
+                        stringResource(R.string.p_pfand_x, money(pfandTotal)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -887,7 +887,7 @@ private fun GalleryItemCard(
                     Spacer(Modifier.weight(1f))
                     if (item.product.priceEuro > 0) {
                         Text(
-                            euro(item.product.priceEuro * item.listItem.quantity),
+                            money(item.product.priceEuro * item.listItem.quantity),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,

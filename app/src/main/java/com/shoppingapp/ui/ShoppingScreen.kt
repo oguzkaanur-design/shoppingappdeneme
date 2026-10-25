@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.shoppingapp.money.MoneyFormat
 import com.shoppingapp.R
 import com.shoppingapp.data.aisle.AisleGroup
 import com.shoppingapp.data.aisle.AisleOrder
@@ -678,13 +679,13 @@ private fun SummaryCard(
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
                     Text(
-                        text = euro(euroTotal),
+                        text = money(euroTotal),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = stringResource(R.string.p_pfand_x, euro(pfandTotal)),
+                        text = stringResource(R.string.p_pfand_x, money(pfandTotal)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
                     )
@@ -842,7 +843,7 @@ fun ShoppingItemCard(
                         Tag(
                             text = stringResource(
                                 R.string.p_pfand_x,
-                                euro(item.product.pfandAmount * item.listItem.quantity)
+                                money(item.product.pfandAmount * item.listItem.quantity)
                             ),
                             background = MaterialTheme.colorScheme.secondaryContainer,
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -874,7 +875,7 @@ fun ShoppingItemCard(
 
                     if (item.product.priceEuro > 0) {
                         Text(
-                            text = euro(item.product.priceEuro * item.listItem.quantity),
+                            text = money(item.product.priceEuro * item.listItem.quantity),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 10.dp)
@@ -1048,7 +1049,7 @@ private fun CompletePurchaseDialog(
                 ) {
                     Text(stringResource(R.string.s_toplam), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        euro(total),
+                        money(total),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -1063,7 +1064,7 @@ private fun CompletePurchaseDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        euro(pfand),
+                        money(pfand),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1117,14 +1118,14 @@ private fun ReceiptDialog(receipt: PurchaseReceipt, onDismiss: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(stringResource(R.string.s_toplam))
-                    Text(euro(receipt.total), fontWeight = FontWeight.Bold)
+                    Text(money(receipt.total), fontWeight = FontWeight.Bold)
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(stringResource(R.string.s_pfand), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(euro(receipt.pfand), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(money(receipt.pfand), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(stringResource(R.string.s_harcama_istatistiklere_islendi),
                     style = MaterialTheme.typography.bodySmall,
@@ -1409,7 +1410,7 @@ internal fun parseColor(hex: String): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }
         .getOrDefault(Color(0xFF047857))
 
-internal fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+internal fun money(value: Double): String = MoneyFormat.amount(value)
 
 private fun amount(value: Double): String = String.format(Locale.GERMANY, "%.2f", value)
 

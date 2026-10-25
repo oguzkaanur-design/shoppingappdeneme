@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Baskit</string>
+    <string name="app_name">Korb</string>
 
     <string name="nav_list">Liste</string>
     <string name="nav_pantry">Vorrat</string>
@@ -19,7 +19,7 @@
     <string name="action_share">Teilen</string>
     <string name="action_retry">Erneut versuchen</string>
 
-    <string name="widget_title">Baskit · Einkaufsliste</string>
+    <string name="widget_title">Korb · Einkaufsliste</string>
     <string name="widget_loading">Liste wird geladen…</string>
     <string name="widget_scan">Barcode scannen</string>
     <string name="widget_open">Liste öffnen</string>
@@ -62,7 +62,7 @@
     <string name="s_bildirimleri_simdi_dene">Benachrichtigungen jetzt testen</string>
     <string name="s_bir_urune_dokununca_listeye_eklenir">Tippe ein Produkt an, um es zur Liste hinzuzufügen.</string>
     <string name="s_birim">Einheit</string>
-    <string name="s_birim_fiyat_euro">Stückpreis (€)</string>
+    <string name="s_birim_fiyat_euro">Stückpreis (%1$s)</string>
     <string name="s_bos_birakip_kaydedersen_butce_takibi_kapanir">Leer lassen und speichern, um das Budget zu deaktivieren.</string>
     <string name="s_brosur_listesi_internetten_aliniyor">Die Prospektliste wird aus dem Internet geladen.</string>
     <string name="s_brosurler_marketlerin_yayinladigi_haftalik_prosp">Prospekte stammen aus den wöchentlichen Handzetteln der Märkte (marktguru). Preise und Produkte können je nach Markt variieren.</string>
@@ -92,7 +92,7 @@
     <string name="s_fis_tara">Kassenbon scannen</string>
     <string name="s_fisin_fotografini_cek_urunler_ve_fiyatlar_okunup">Fotografiere den Kassenbon; Produkte und Preise werden gelesen und in der Historie gespeichert.</string>
     <string name="s_fisle_tamamla">Mit Bon abschließen</string>
-    <string name="s_fiyat_euro">Preis (€)</string>
+    <string name="s_fiyat_euro">Preis (%1$s)</string>
     <string name="s_fotograf_cek">Foto aufnehmen</string>
     <string name="s_galeriden_sec">Aus Galerie wählen</string>
     <string name="s_geri">Zurück</string>
@@ -134,7 +134,7 @@
     <string name="s_kilerden_kaldir">Aus dem Vorrat entfernen</string>
     <string name="s_kritik_esik">Kritischer Wert</string>
     <string name="s_kritikleri_listeye_ekle">Kritische Artikel zur Liste</string>
-    <string name="s_limit_euro">Limit (€)</string>
+    <string name="s_limit_euro">Limit (%1$s)</string>
     <string name="s_liste_gecmis_kiler_cebim_ve_firsatlar_tek_bir_js">Liste, Historie, Vorrat, Geldbeutel und Angebote werden in einer JSON-Datei gesichert. Für ein neues Handy genügt es, diese Datei wiederherzustellen.</string>
     <string name="s_liste_henuz_bos">Liste ist leer</string>
     <string name="s_listeye">Zur Liste</string>
@@ -163,7 +163,7 @@
     <string name="s_pfand">Pfand</string>
     <string name="s_pfand_detaylari">Pfand-Details</string>
     <string name="s_pfand_ekle">Pfand hinzufügen</string>
-    <string name="s_pfand_euro">Pfand (€)</string>
+    <string name="s_pfand_euro">Pfand (%1$s)</string>
     <string name="s_pfand_verilerini_sifirla">Pfanddaten zurücksetzen</string>
     <string name="s_prospektus_fiyatlariyla_toplam">Summe zu Prospektpreisen</string>
     <string name="s_prospektusler">Prospekte</string>
@@ -192,7 +192,7 @@
     <string name="s_toplam_pfand_degeri">Gesamter Pfandwert</string>
     <string name="s_tum_verin_cihazda">Alle deine Daten bleiben auf dem Gerät</string>
     <string name="s_tur_sec_adet_ve_birim_fiyati_istedigin_gibi_duze">Wähle eine Art und passe Menge und Stückpreis an.</string>
-    <string name="s_tutar_euro">Betrag (€)</string>
+    <string name="s_tutar_euro">Betrag (%1$s)</string>
     <string name="s_urun_adi">Produktname</string>
     <string name="s_urun_adi_gerekli">Produktname erforderlich</string>
     <string name="s_urun_ara_produkt_suchen">Produkt suchen · Produkt suchen</string>
@@ -230,10 +230,10 @@
     <string name="p_toplam_x">Gesamt: %1$s</string>
     <string name="p_x">%1$s</string>
     <string name="p_x_2">%1$s ×</string>
-    <string name="p_x_3">€%1$s</string>
+    <string name="p_x_3">%1$s</string>
     <string name="p_x_alinacak_x_alindi">%1$s offen · %2$s gekauft</string>
     <string name="p_x_alinacak_x_alindi_satira_dokun">%1$s offen · %2$s gekauft · Zeile antippen</string>
-    <string name="p_x_alisveris_x_toplam">%1$s Einkäufe · €%2$s gesamt</string>
+    <string name="p_x_alisveris_x_toplam">%1$s Einkäufe · %2$s gesamt</string>
     <string name="p_x_bakiyesinden_dus">Vom %1$s-Saldo abziehen</string>
     <string name="p_x_bakiyesine_ekle">Zum %1$s-Saldo hinzufügen</string>
     <string name="p_x_bu_miktara_dusunce_listeye_eklenmesi_o">Es wird empfohlen, %1$s auf die Liste zu setzen, wenn der Bestand darauf fällt.</string>
@@ -254,7 +254,7 @@
     <string name="p_x_x">%1$s · %2$s</string>
     <string name="p_x_x_2">%1$s × %2$s = </string>
     <string name="p_x_x_3">%1$s / %2$s</string>
-    <string name="p_x_x_4">%1$s %2$s</string>
+    <string name="p_x_x_4">%1$s%2$s</string>
     <string name="p_x_x_5">%1$s × %2$s</string>
     <string name="p_x_x_6">%1$s (%2$s)</string>
     <string name="p_x_x_oneri">%1$s · %2$s Vorschläge</string>
@@ -287,7 +287,7 @@
     <string name="offers_offer_count">%1$d Angebote</string>
     <string name="s_listeye_ekle_x">Zur Liste hinzufügen · %1$s</string>
     <string name="p_bitir_x">Fertig (%1$d)</string>
-    <string name="scanner_last_price">Zuletzt: %1$s €%2$s · %3$s</string>
+    <string name="scanner_last_price">Zuletzt: %1$s%2$s · %3$s</string>
     <string name="scanner_save_failed">Barcode gelesen, aber das Produkt konnte nicht gespeichert werden. Bitte erneut versuchen.</string>
     <string name="receipt_open_failed">Foto konnte nicht geöffnet werden</string>
     <string name="receipt_no_items">Keine Artikel auf dem Bon gefunden. Versuche ein schärferes Foto.</string>
@@ -299,8 +299,8 @@
     <string name="stats_active_value">%1$d Produkte</string>
     <string name="stats_purchased_before">%1$d Artikel zuvor gekauft</string>
     <string name="stats_empty_history">Schließe deinen ersten Einkauf mit „Einkauf abschließen“ ab – dann erscheinen Wochenausgaben, Kategorien und Preistrends hier.</string>
-    <string name="stats_trend_last">zuletzt %1$s €</string>
-    <string name="stats_trend_previous">zuvor %1$s €</string>
+    <string name="stats_trend_last">zuletzt %1$s</string>
+    <string name="stats_trend_previous">zuvor %1$s</string>
     <string name="pantry_critical_title">Kritischer Bestand</string>
     <string name="pantry_critical_hint">Unter dem Schwellwert · antippen, um zur Liste hinzuzufügen</string>
     <string name="pantry_expiring_title">Bald ablaufend</string>
@@ -352,7 +352,7 @@
     <string name="pfand_return_amount_label">Erhaltener Betrag</string>
     <string name="pfand_return_amount_placeholder">z. B. 7,50</string>
     <string name="pfand_return_pending">Wartet auf Rückgabe: %1$s · %2$d Stück</string>
-    <string name="pfand_return_invalid_amount">Gib einen Betrag zwischen 0,01 € und 10.000 € ein.</string>
+    <string name="pfand_return_invalid_amount">Gib einen Betrag zwischen 0,01 und 10.000 ein.</string>
     <string name="pfand_return_too_little">Das ist weniger als das Pfand eines einzelnen Stücks.</string>
     <string name="pfand_return_no_match">Der Betrag passt nicht zu ganzen Stücken. Prüfe den Betrag oder die Pfandwerte.</string>
     <string name="pfand_return_exceeds">Das ist mehr als das offene Pfand insgesamt.</string>
@@ -392,7 +392,7 @@
     <string name="legal_title">Datenschutz und Bedingungen</string>
     <string name="legal_entry_subtitle">Datenschutz, Nutzungsbedingungen und Kontakt</string>
     <string name="legal_privacy_title">Datenschutzerklärung</string>
-    <string name="legal_privacy_body">Baskit legt keine Konten an, zeigt keine Werbung und sammelt keine Nutzungsdaten. Einkaufsliste, Vorrat, Ausgabenverlauf und Angebote bleiben auf diesem Gerät.\n\nBeim Scannen eines Barcodes wird die Nummer an world.openfoodfacts.org gesendet, beim Öffnen von Prospekten wird marktguru.de angefragt. Kontodaten werden dabei nicht übertragen. Sicherungsdateien sind nicht verschlüsselt; geben Sie sie nur an vertrauenswürdige Personen weiter.\n\nDie Kamera dient nur zum Lesen von Barcodes und Belegen, die Benachrichtigungsberechtigung nur für Erinnerungen.</string>
+    <string name="legal_privacy_body">Korb funktioniert ohne Konto, zeigt keine Werbung und sammelt keine Nutzungsdaten. Einkaufsliste, Vorrat, Ausgabenverlauf und Angebote bleiben auf diesem Gerät.\n\nBei der Anmeldung mit Google werden deine Daten in einen versteckten, nur für die App bestimmten Ordner in deinem eigenen Google Drive gesichert. Auf andere Dateien wird nicht zugegriffen, einen eigenen Server gibt es nicht. Ein lokal mit E-Mail erstelltes Konto bleibt auf diesem Gerät; das Passwort selbst wird nie gespeichert.\n\nBeim Scannen eines Barcodes wird die Nummer an world.openfoodfacts.org gesendet, beim Öffnen von Prospekten wird marktguru.de angefragt. Kontodaten werden dabei nicht übertragen. Sicherungsdateien sind nicht verschlüsselt.\n\nDie Kamera dient nur zum Lesen von Barcodes und Belegen, die Benachrichtigungsberechtigung nur für Erinnerungen.</string>
     <string name="legal_terms_title">Nutzungsbedingungen</string>
     <string name="legal_terms_body">Die App wird ohne Gewähr bereitgestellt. Preise und Prospekte stammen von Dritten und können verzögert oder falsch sein; maßgeblich ist der Preis am Regal.\n\nEin Gerätewechsel oder das Löschen der App ohne Sicherung führt zu Datenverlust. Die Nutzung erfolgt auf eigenes Risiko.</string>
     <string name="legal_contact_title">Kontakt</string>
@@ -482,7 +482,7 @@
     <string name="report_status_returned">Erstattet</string>
     <string name="report_empty">Keine Einträge</string>
     <string name="report_generated">Erstellt: %1$s</string>
-    <string name="report_footer">Baskit · Daten bleiben auf diesem Gerät</string>
+    <string name="report_footer">Korb · Daten bleiben auf diesem Gerät</string>
     <string name="report_share_title">Bericht teilen</string>
     <string name="report_hint">Tabellen nutzen die aktuellen Daten auf diesem Gerät; das PDF wird offline erstellt.</string>
     <string name="report_units_value">%1$d Stück</string>
@@ -500,4 +500,56 @@
     <string name="premium_deactivated">Lizenz entfernt</string>
     <string name="premium_offline_note">Die Prüfung erfolgt offline; es werden keine Daten an einen Server gesendet.</string>
     <string name="pfand_return_all">Alles zurückgeben</string>
+    <string name="onboarding_language_title">Sprache wählen</string>
+    <string name="onboarding_language_subtitle">Die App verwendet diese Sprache. Du kannst sie später in den Einstellungen ändern.</string>
+    <string name="onboarding_country_title">Land wählen</string>
+    <string name="onboarding_country_subtitle">Preise werden in der Währung deines Landes angezeigt. Du kannst das später ändern.</string>
+    <string name="onboarding_country_search">Land suchen</string>
+    <string name="onboarding_account_title">Konto verbinden</string>
+    <string name="onboarding_account_subtitle">Mit einem Konto bleibt deine Liste auf einem neuen Handy synchron. Du kannst auch ohne Konto fortfahren.</string>
+    <string name="onboarding_google">Mit Google fortfahren</string>
+    <string name="onboarding_google_unavailable">Google-Anmeldung ist in diesem Build nicht eingerichtet.</string>
+    <string name="onboarding_local">Konto mit E-Mail erstellen</string>
+    <string name="onboarding_skip">Ohne Konto fortfahren</string>
+    <string name="onboarding_local_title">Lokales Konto</string>
+    <string name="onboarding_local_hint">Dieses Konto bleibt auf dem Gerät; deine Daten verlassen das Handy nicht.</string>
+    <string name="onboarding_email">E-Mail</string>
+    <string name="onboarding_password">Passwort</string>
+    <string name="onboarding_password_repeat">Passwort (wiederholen)</string>
+    <string name="onboarding_create">Konto erstellen</string>
+    <string name="onboarding_error_email">Gib eine gültige E-Mail-Adresse ein.</string>
+    <string name="onboarding_error_password">Das Passwort braucht mindestens 8 Zeichen.</string>
+    <string name="onboarding_error_mismatch">Die Passwörter stimmen nicht überein.</string>
+    <string name="onboarding_error_exists">Auf diesem Gerät ist bereits ein anderes Konto gespeichert.</string>
+    <string name="onboarding_continue">Weiter</string>
+    <string name="onboarding_back">Zurück</string>
+    <string name="onboarding_tour_later">Überspringen</string>
+    <string name="onboarding_tour_start">Los geht es</string>
+    <string name="onboarding_tour_next">Weiter</string>
+    <string name="onboarding_step_of">%1$d/%2$d</string>
+    <string name="tour_list_title">Deine Liste, immer bereit</string>
+    <string name="tour_list_desc">Artikel mit einem Tippen hinzufügen, Mengen ändern und beim Einkauf abhaken. Die Liste sortiert sich nach Kategorie.</string>
+    <string name="tour_scan_title">Barcode scannen</string>
+    <string name="tour_scan_desc">Direkt am Regal scannen und Preis, Markt und letzten Einkauf sehen.</string>
+    <string name="tour_offers_title">Prospekte und Angebote</string>
+    <string name="tour_offers_desc">Aktuelle Prospekte ansehen und Produkte auf die Einkaufs- oder Angebotsliste setzen.</string>
+    <string name="tour_money_title">Portemonnaie und Pfand</string>
+    <string name="tour_money_desc">Bargeld, Bank und offenes Pfand im Blick behalten und ein Ausgabenlimit setzen.</string>
+    <string name="tour_report_title">Vorrat und Berichte</string>
+    <string name="tour_report_desc">Vorräte verfolgen und Monatsausgaben als PDF exportieren.</string>
+    <string name="account_title">Konto und Synchronisierung</string>
+    <string name="account_signed_out">Kein Konto — Daten bleiben auf diesem Gerät.</string>
+    <string name="account_google">Google-Konto</string>
+    <string name="account_local">Lokales Konto</string>
+    <string name="account_guest">Kein Konto</string>
+    <string name="account_sync_now">Jetzt synchronisieren</string>
+    <string name="account_sync_requires_google">Melde dich mit Google an, um zu synchronisieren.</string>
+    <string name="account_sign_out">Abmelden</string>
+    <string name="account_sign_in_google">Mit Google anmelden</string>
+    <string name="sync_uploaded">In der Cloud gesichert.</string>
+    <string name="sync_downloaded">Sicherung aus der Cloud wiederhergestellt.</string>
+    <string name="sync_first_upload">Erste Sicherung in die Cloud geladen.</string>
+    <string name="sync_failed">Synchronisierung fehlgeschlagen: %1$s</string>
+    <string name="settings_currency">Währung</string>
+    <string name="settings_account">Konto und Synchronisierung</string>
 </resources>

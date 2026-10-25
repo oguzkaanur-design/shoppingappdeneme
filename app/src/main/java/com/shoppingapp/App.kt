@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.shoppingapp.di.BackgroundEntryPoint
 import com.shoppingapp.feature.language.LanguageStore
+import com.shoppingapp.money.CurrencyStore
 import com.shoppingapp.notifications.NotificationHelper
 import com.shoppingapp.notifications.ReminderScheduler
 import com.shoppingapp.notifications.ReminderSettings
@@ -28,8 +29,9 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        // Kayıtlı görünüm seçimi ilk çizimden önce yüklenir.
+        // Kayıtlı görünüm ve para birimi seçimi ilk çizimden önce yüklenir.
         ThemeStore.init(this)
+        CurrencyStore.init(this)
 
         // Yakalanmamış hatalar cihazda tutulur; kullanıcı isterse tanılama kaydı olarak paylaşır.
         CrashLog.install(this)

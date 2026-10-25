@@ -36,7 +36,7 @@ class ReportPdfWriterTest {
             }
         )
         val document = ReportDocument(
-            brand = "Baskit",
+            brand = "Korb",
             title = "Report",
             generatedLabel = "Generated: 25.10.2026 15:00",
             summaryTitle = "Summary",
@@ -47,7 +47,7 @@ class ReportPdfWriterTest {
             movementsTitle = "Transactions",
             pfandTitle = "Pfand",
             pantryTitle = "Pantry",
-            footer = "Baskit · Data stays on this device",
+            footer = "Korb · Data stays on this device",
             labels = labels,
             cash = 45.10,
             bank = 1154.10,

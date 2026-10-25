@@ -126,7 +126,7 @@ class BackupManager @Inject constructor(
         val payload = try {
             gson.fromJson(normalized, BackupPayload::class.java)
         } catch (error: RuntimeException) {
-            throw IllegalArgumentException("Dosya geçerli bir Baskit yedeği değil.", error)
+            throw IllegalArgumentException("Dosya geçerli bir Korb yedeği değil.", error)
         } ?: throw IllegalArgumentException("Dosya boş.")
 
         // Geri yükleme tek transaction: yarıda kalan bir aktarım veriyi karışık bırakmaz.

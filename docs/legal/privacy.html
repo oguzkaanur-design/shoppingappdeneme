@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Baskit — Privacy Policy</title>
+<title>Korb — Privacy Policy</title>
 <style>
   :root { color-scheme: light dark; }
   body { margin: 0 auto; max-width: 46rem; padding: 2.5rem 1.25rem 4rem;
@@ -19,16 +19,33 @@
 <body>
 <nav><a href="./index.html">Legal overview</a><a href="./terms.html">Terms of use</a></nav>
 <h1>Privacy Policy</h1>
-<p class="meta">Baskit for Android (package <code>com.shoppingapp</code>) · Last updated: 25 October 2026</p>
+<p class="meta">Korb for Android (package <code>com.shoppingapp</code>) · Last updated: 25 October 2026</p>
 
-<p>Baskit is a shopping-list app that works on your device. It does not create user
-accounts, does not show advertising, and does not include analytics, tracking or
+<p>Korb is a shopping-list app that works on your device and needs no account. It
+does not show advertising and does not include analytics, tracking or
 crash-reporting SDKs.</p>
+
+<h2>Optional accounts and sync</h2>
+<p>You can use the app entirely without an account. Two optional account types
+exist:</p>
+<ul>
+  <li><strong>Sign in with Google</strong> — the app receives your Google account's
+      email address and display name and uses Google Drive's app-private folder as
+      the backup location. The app can only see its own folder inside your Drive and
+      cannot read your other files. There is no developer-operated server: the data
+      goes directly from your device to your own Google account.</li>
+  <li><strong>Local email account</strong> — the email address and a PBKDF2-SHA256
+      hash of your password are stored in the app's private storage on that device.
+      The password itself is never stored and the account never leaves the phone.</li>
+</ul>
+<p>Signing out removes the account reference from the device. Data already stored
+in your Google Drive folder stays there until you delete it in Drive.</p>
 
 <h2>Data stored on your device</h2>
 <p>The app stores your shopping list, pantry stock, purchase history, budget and
 Pfand entries, saved offers, cached flyer pages and local backups in its private
-app storage. This data is not uploaded to a server operated by the developer.</p>
+app storage. This data is not uploaded to a server operated by the developer; it
+only leaves the device if you sign in with Google and start a sync.</p>
 
 <p>PDF reports are created on the device and kept in the app cache until you share
 them or clear app data. If you activate an optional premium licence, only the

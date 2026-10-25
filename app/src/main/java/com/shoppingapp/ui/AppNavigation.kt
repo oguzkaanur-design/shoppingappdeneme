@@ -33,6 +33,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.shoppingapp.R
+import com.shoppingapp.feature.account.AccountScreen
 import com.shoppingapp.feature.backup.BackupScreen
 import com.shoppingapp.feature.language.LanguageScreen
 import com.shoppingapp.feature.legal.LegalScreen
@@ -186,8 +187,12 @@ fun AppNavigation(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToLegal = { navController.navigate("legal") },
                     onNavigateToLanguage = { navController.navigate("language") },
-                    onNavigateToTheme = { navController.navigate("theme") }
+                    onNavigateToTheme = { navController.navigate("theme") },
+                    onNavigateToAccount = { navController.navigate("account") }
                 )
+            }
+            composable("account") {
+                AccountScreen(onNavigateBack = { navController.popBackStack() })
             }
             composable("language") {
                 LanguageScreen(onNavigateBack = { navController.popBackStack() })

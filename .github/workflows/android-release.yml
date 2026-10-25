@@ -108,9 +108,18 @@ jobs:
       - name: Unit tests and lint gate
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug --no-daemon --console=plain
 
+      # Google ile giriş, Google Cloud'daki **Web** OAuth istemci kimliğine bağlı.
+      # Değer gizli değildir (APK içinde görünür) ama yine de depo ayarından gelir:
+      # Settings -> Secrets and variables -> Actions -> Variables -> GOOGLE_WEB_CLIENT_ID.
+      # Tanımlı değilse giriş düğmesi "yapılandırılmadı" durumunda kalır.
       - name: Build release APK and AAB
+        env:
+          GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
         run: |
           set -euo pipefail
+          if [ -z "$GOOGLE_WEB_CLIENT_ID" ]; then
+            echo "::warning::GOOGLE_WEB_CLIENT_ID tanımlı değil; APK'da Google ile giriş kapalı kalacak."
+          fi
           ARGS=()
           if [ -n "${{ inputs.versionCode }}" ]; then ARGS+=("-PversionCode=${{ inputs.versionCode }}"); fi
           if [ -n "${{ inputs.versionName }}" ]; then ARGS+=("-PversionName=${{ inputs.versionName }}"); fi
@@ -148,8 +157,8 @@ jobs:
           AAB=app/build/outputs/bundle/release/app-release.aab
           META=app/build/outputs/apk/release/output-metadata.json
           VERSION=$(python3 -c "import json;e=json.load(open('$META'))['elements'][0];print(f\"{e['versionName']}-v{e['versionCode']}\")")
-          NAME="Baskit-$VERSION.apk"
-          AAB_NAME="Baskit-$VERSION.aab"
+          NAME="Korb-$VERSION.apk"
+          AAB_NAME="Korb-$VERSION.aab"
           cp "$APK" "$NAME"
           cp "$AAB" "$AAB_NAME"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
@@ -158,14 +167,14 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: baskit-release-apk
+          name: korb-release-apk
           path: ${{ steps.apk.outputs.name }}
           if-no-files-found: error
 
       - name: Upload AAB artifact (Play Console)
         uses: actions/upload-artifact@v4
         with:
-          name: baskit-release-aab
+          name: korb-release-aab
           path: ${{ steps.apk.outputs.aab_name }}
           if-no-files-found: error
 
@@ -174,7 +183,7 @@ jobs:
       - name: Upload R8 mapping
         uses: actions/upload-artifact@v4
         with:
-          name: baskit-r8-mapping
+          name: korb-r8-mapping
           path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: error
 

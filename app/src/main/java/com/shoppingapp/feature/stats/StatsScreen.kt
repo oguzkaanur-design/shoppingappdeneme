@@ -67,6 +67,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.shoppingapp.money.CurrencyStore
+import com.shoppingapp.money.MoneyFormat
 import com.shoppingapp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,7 +99,7 @@ fun StatsScreen(
             item {
                 StatCard(
                     title = stringResource(R.string.stats_total_spending),
-                    value = euro(statsState.totalSpending),
+                    value = money(statsState.totalSpending),
                     subtitle = stringResource(R.string.stats_purchase_count, statsState.purchaseCount),
                     icon = Icons.Default.ShoppingCart,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -110,7 +112,7 @@ fun StatsScreen(
             item {
                 StatCard(
                     title = stringResource(R.string.stats_pfand_title),
-                    value = euro(statsState.pfandTotal),
+                    value = money(statsState.pfandTotal),
                     subtitle = stringResource(R.string.stats_pfand_waiting, statsState.pfandUnits),
                     icon = Icons.Default.Refresh,
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -481,9 +483,9 @@ private fun BudgetCard(state: StatsUiState, onSave: (Double) -> Unit) {
                     Text(stringResource(R.string.s_aylik_butce), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
                         if (state.hasBudget) {
-                            "${euro(state.monthSpending)} / ${euro(state.monthlyLimit)} · bu ay"
+                            "${money(state.monthSpending)} / ${money(state.monthlyLimit)} · bu ay"
                         } else {
-                            "Bu ay ${euro(state.monthSpending)} harcandı"
+                            "Bu ay ${money(state.monthSpending)} harcandı"
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -511,9 +513,9 @@ private fun BudgetCard(state: StatsUiState, onSave: (Double) -> Unit) {
                 )
                 Text(
                     if (overBudget) {
-                        "${euro(-state.budgetRemaining)} bütçeyi aştın"
+                        "${money(-state.budgetRemaining)} bütçeyi aştın"
                     } else {
-                        "${euro(state.budgetRemaining)} kaldı"
+                        "${money(state.budgetRemaining)} kaldı"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
@@ -565,7 +567,7 @@ private fun BudgetDialog(current: Double, onDismiss: () -> Unit, onSave: (Double
                     onValueChange = { value ->
                         text = value.filter { it.isDigit() || it == ',' || it == '.' }
                     },
-                    label = { Text(stringResource(R.string.s_limit_euro)) },
+                    label = { Text(stringResource(R.string.s_limit_euro, CurrencyStore.symbol())) },
                     placeholder = { Text(stringResource(R.string.s_orn_250)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
@@ -594,6 +596,6 @@ private fun parseColor(hex: String): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }
         .getOrDefault(Color(0xFF047857))
 
-private fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+private fun money(value: Double): String = MoneyFormat.amount(value)
 
-private fun amount(value: Double): String = String.format(Locale.GERMANY, "%.2f", value)
+private fun amount(value: Double): String = MoneyFormat.amount(value)

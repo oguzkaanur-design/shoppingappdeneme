@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Baskit</string>
+    <string name="app_name">Korb</string>
 
     <!-- Alt menü -->
     <string name="nav_list">Liste</string>
@@ -23,7 +23,7 @@
     <string name="action_retry">Yeniden dene</string>
 
     <!-- Ana ekran widget'ı -->
-    <string name="widget_title">Baskit · alışveriş listesi</string>
+    <string name="widget_title">Korb · alışveriş listesi</string>
     <string name="widget_loading">Liste yükleniyor…</string>
     <string name="widget_scan">Barkod tara</string>
     <string name="widget_open">Listeyi aç</string>
@@ -68,7 +68,7 @@
     <string name="s_bildirimleri_simdi_dene">Bildirimleri şimdi dene</string>
     <string name="s_bir_urune_dokununca_listeye_eklenir">Bir ürüne dokununca listeye eklenir.</string>
     <string name="s_birim">Birim</string>
-    <string name="s_birim_fiyat_euro">Birim fiyat (€)</string>
+    <string name="s_birim_fiyat_euro">Birim fiyat (%1$s)</string>
     <string name="s_bos_birakip_kaydedersen_butce_takibi_kapanir">Boş bırakıp kaydedersen bütçe takibi kapanır.</string>
     <string name="s_brosur_listesi_internetten_aliniyor">Broşür listesi internetten alınıyor.</string>
     <string name="s_brosurler_marketlerin_yayinladigi_haftalik_prosp">Broşürler marketlerin yayınladığı haftalık prospektüslerden alınır (marktguru). Fiyatlar ve ürünler seçili mağazaya göre değişebilir.</string>
@@ -98,7 +98,7 @@
     <string name="s_fis_tara">Fiş tara</string>
     <string name="s_fisin_fotografini_cek_urunler_ve_fiyatlar_okunup">Fişin fotoğrafını çek; ürünler ve fiyatlar okunup alışveriş geçmişine yazılır.</string>
     <string name="s_fisle_tamamla">Fişle tamamla</string>
-    <string name="s_fiyat_euro">Fiyat (€)</string>
+    <string name="s_fiyat_euro">Fiyat (%1$s)</string>
     <string name="s_fotograf_cek">Fotoğraf çek</string>
     <string name="s_galeriden_sec">Galeriden seç</string>
     <string name="s_geri">Geri</string>
@@ -140,7 +140,7 @@
     <string name="s_kilerden_kaldir">Kilerden kaldır</string>
     <string name="s_kritik_esik">Kritik eşik</string>
     <string name="s_kritikleri_listeye_ekle">Kritikleri listeye ekle</string>
-    <string name="s_limit_euro">Limit (€)</string>
+    <string name="s_limit_euro">Limit (%1$s)</string>
     <string name="s_liste_gecmis_kiler_cebim_ve_firsatlar_tek_bir_js">Liste, geçmiş, kiler, Cebim ve fırsatlar tek bir JSON dosyasında yedeklenir. Telefon değişince bu dosyayı geri yüklemen yeterli.</string>
     <string name="s_liste_henuz_bos">Liste henüz boş</string>
     <string name="s_listeye">Listeye</string>
@@ -169,7 +169,7 @@
     <string name="s_pfand">Pfand</string>
     <string name="s_pfand_detaylari">Pfand detayları</string>
     <string name="s_pfand_ekle">Pfand ekle</string>
-    <string name="s_pfand_euro">Pfand (€)</string>
+    <string name="s_pfand_euro">Pfand (%1$s)</string>
     <string name="s_pfand_verilerini_sifirla">Pfand verilerini sıfırla</string>
     <string name="s_prospektus_fiyatlariyla_toplam">Prospektüs fiyatlarıyla toplam</string>
     <string name="s_prospektusler">Prospektüsler</string>
@@ -198,7 +198,7 @@
     <string name="s_toplam_pfand_degeri">Toplam Pfand değeri</string>
     <string name="s_tum_verin_cihazda">Tüm verin cihazda</string>
     <string name="s_tur_sec_adet_ve_birim_fiyati_istedigin_gibi_duze">Tür seç, adet ve birim fiyatı istediğin gibi düzenle.</string>
-    <string name="s_tutar_euro">Tutar (€)</string>
+    <string name="s_tutar_euro">Tutar (%1$s)</string>
     <string name="s_urun_adi">Ürün adı</string>
     <string name="s_urun_adi_gerekli">Ürün adı gerekli</string>
     <string name="s_urun_ara_produkt_suchen">Ürün ara · Produkt suchen</string>
@@ -231,7 +231,7 @@
     <!-- Barkod tarayıcı -->
     <string name="s_listeye_ekle_x">Listeye ekle · %1$s</string>
     <string name="p_bitir_x">Bitir (%1$d)</string>
-    <string name="scanner_last_price">Son: €%1$s%2$s · %3$s</string>
+    <string name="scanner_last_price">Son: %1$s%2$s · %3$s</string>
     <string name="scanner_save_failed">Barkod okundu ama ürün kaydedilemedi. Tekrar deneyin.</string>
 
     <!-- Fiş tarama -->
@@ -247,8 +247,8 @@
     <string name="stats_active_value">%1$d ürün</string>
     <string name="stats_purchased_before">%1$d ürün önceden alındı</string>
     <string name="stats_empty_history">İlk alışverişini “Alışverişi tamamla” ile bitirince haftalık harcama, kategori dağılımı ve fiyat trendi burada oluşur.</string>
-    <string name="stats_trend_last">son €%1$s</string>
-    <string name="stats_trend_previous">önceki €%1$s</string>
+    <string name="stats_trend_last">son %1$s</string>
+    <string name="stats_trend_previous">önceki %1$s</string>
 
     <!-- Kiler -->
     <string name="pantry_critical_title">Kritik stok</string>
@@ -298,7 +298,7 @@
     <string name="pfand_return_amount_label">Alınan tutar</string>
     <string name="pfand_return_amount_placeholder">örn. 7,50</string>
     <string name="pfand_return_pending">İade bekleyen: %1$s · %2$d adet</string>
-    <string name="pfand_return_invalid_amount">0,01 € ile 10.000 € arasında bir tutar gir.</string>
+    <string name="pfand_return_invalid_amount">0,01 ile 10.000 arasında bir tutar gir.</string>
     <string name="pfand_return_too_little">Bu tutar tek bir ürünün Pfand değerinden az.</string>
     <string name="pfand_return_no_match">Bu tutar tam ürünlere denk gelmiyor. Tutarı veya Pfand değerlerini kontrol et.</string>
     <string name="pfand_return_exceeds">Bu tutar bekleyen Pfand toplamından fazla.</string>
@@ -368,10 +368,10 @@
     <string name="p_toplam_x">Toplam: %1$s</string>
     <string name="p_x">%1$s</string>
     <string name="p_x_2">%1$s ×</string>
-    <string name="p_x_3">€%1$s</string>
+    <string name="p_x_3">%1$s</string>
     <string name="p_x_alinacak_x_alindi">%1$s alınacak · %2$s alındı</string>
     <string name="p_x_alinacak_x_alindi_satira_dokun">%1$s alınacak · %2$s alındı · satıra dokun</string>
-    <string name="p_x_alisveris_x_toplam">%1$s alışveriş · €%2$s toplam</string>
+    <string name="p_x_alisveris_x_toplam">%1$s alışveriş · %2$s toplam</string>
     <string name="p_x_bakiyesinden_dus">%1$s bakiyesinden düş</string>
     <string name="p_x_bakiyesine_ekle">%1$s bakiyesine ekle</string>
     <string name="p_x_bu_miktara_dusunce_listeye_eklenmesi_o">%1$s bu miktara düşünce listeye eklenmesi önerilir.</string>
@@ -419,7 +419,7 @@
     <string name="legal_title">Gizlilik ve koşullar</string>
     <string name="legal_entry_subtitle">Gizlilik politikası, kullanım şartları ve iletişim</string>
     <string name="legal_privacy_title">Gizlilik politikası</string>
-    <string name="legal_privacy_body">Baskit hesap açmaz, reklam göstermez ve kullanım verisi toplamaz. Alışveriş listesi, kiler, harcama geçmişi ve fırsatlar yalnızca bu cihazda saklanır.\n\nBarkod okuttuğunuzda ürün adı için world.openfoodfacts.org adresine, prospektüsleri açtığınızda marktguru.de adresine istek gönderilir. Bu isteklerde hesap bilgisi gönderilmez. Yedek dosyası şifrelenmez; yalnızca güvendiğiniz kişilerle paylaşın.\n\nKamera yalnızca barkod ve fiş okumak için, bildirim izni yalnızca hatırlatıcılar için kullanılır.</string>
+    <string name="legal_privacy_body">Korb hesap açmadan da çalışır; reklam göstermez ve kullanım verisi toplamaz. Alışveriş listesi, kiler, harcama geçmişi ve fırsatlar bu cihazda saklanır.\n\nGoogle ile giriş yaparsan verilerin kendi Google Drive hesabındaki uygulamaya özel gizli klasöre yedeklenir; başka dosyalarına erişilmez ve bize ait bir sunucu yoktur. E-posta ile oluşturulan yerel hesap yalnızca bu cihazda kalır; şifrenin kendisi hiçbir yerde saklanmaz.\n\nBarkod okuttuğunda ürün adı için world.openfoodfacts.org adresine, prospektüsleri açtığında marktguru.de adresine istek gönderilir. Bu isteklerde hesap bilgisi gönderilmez. Yedek dosyası şifrelenmez.\n\nKamera yalnızca barkod ve fiş okumak için, bildirim izni yalnızca hatırlatıcılar için kullanılır.</string>
     <string name="legal_terms_title">Kullanım şartları</string>
     <string name="legal_terms_body">Uygulama olduğu gibi sunulur. Fiyat ve prospektüs bilgileri üçüncü taraf kaynaklardan gelir; gecikmeli veya hatalı olabilir. Mağazadaki etiket fiyatı geçerlidir.\n\nYedek almadan cihaz değiştirmek veya uygulamayı silmek veri kaybına yol açar. Uygulamayı kendi riskinizle kullanın.</string>
     <string name="legal_contact_title">İletişim</string>
@@ -509,7 +509,7 @@
     <string name="report_status_returned">İade edildi</string>
     <string name="report_empty">Kayıt yok</string>
     <string name="report_generated">Oluşturma: %1$s</string>
-    <string name="report_footer">Baskit · Veriler yalnızca bu cihazda</string>
+    <string name="report_footer">Korb · Veriler yalnızca bu cihazda</string>
     <string name="report_share_title">Raporu paylaş</string>
     <string name="report_hint">Tablolar cihazdaki güncel kayıtlardan oluşturulur; PDF çevrimdışı hazırlanır.</string>
     <string name="report_units_value">%1$d adet</string>
@@ -527,4 +527,56 @@
     <string name="premium_deactivated">Lisans kaldırıldı</string>
     <string name="premium_offline_note">Doğrulama çevrimdışı yapılır; hiçbir veri sunucuya gönderilmez.</string>
     <string name="pfand_return_all">Tümünü iade et</string>
+    <string name="onboarding_language_title">Dilini seç</string>
+    <string name="onboarding_language_subtitle">Uygulama bu dili kullanacak. Sonradan ayarlardan değiştirebilirsin.</string>
+    <string name="onboarding_country_title">Ülkeni seç</string>
+    <string name="onboarding_country_subtitle">Fiyatlar seçtiğin ülkenin para biriminde gösterilir. Sonradan değiştirebilirsin.</string>
+    <string name="onboarding_country_search">Ülke ara</string>
+    <string name="onboarding_account_title">Hesabını bağla</string>
+    <string name="onboarding_account_subtitle">Hesap açarsan listen yeni telefonda da senkron kalır. İstersen hesapsız devam edebilirsin.</string>
+    <string name="onboarding_google">Google ile devam et</string>
+    <string name="onboarding_google_unavailable">Google girişi bu derlemede yapılandırılmadı.</string>
+    <string name="onboarding_local">E-posta ile hesap oluştur</string>
+    <string name="onboarding_skip">Hesapsız devam et</string>
+    <string name="onboarding_local_title">Yerel hesap</string>
+    <string name="onboarding_local_hint">Bu hesap cihazda kalır; verilerin yalnızca bu telefonda tutulur.</string>
+    <string name="onboarding_email">E-posta</string>
+    <string name="onboarding_password">Şifre</string>
+    <string name="onboarding_password_repeat">Şifre (tekrar)</string>
+    <string name="onboarding_create">Hesabı oluştur</string>
+    <string name="onboarding_error_email">Geçerli bir e-posta gir.</string>
+    <string name="onboarding_error_password">Şifre en az 8 karakter olmalı.</string>
+    <string name="onboarding_error_mismatch">Şifreler aynı değil.</string>
+    <string name="onboarding_error_exists">Bu cihazda başka bir hesapla kayıt var.</string>
+    <string name="onboarding_continue">Devam</string>
+    <string name="onboarding_back">Geri</string>
+    <string name="onboarding_tour_later">Atla</string>
+    <string name="onboarding_tour_start">Başla</string>
+    <string name="onboarding_tour_next">İleri</string>
+    <string name="onboarding_step_of">%1$d/%2$d</string>
+    <string name="tour_list_title">Listen hep hazır</string>
+    <string name="tour_list_desc">Ürünleri tek dokunuşla ekle, miktarı değiştir, alışverişte işaretle. Liste kategorilere göre sıralanır.</string>
+    <string name="tour_scan_title">Barkodu okut</string>
+    <string name="tour_scan_desc">Rafta dururken barkodu okut; fiyatı, marketi ve geçmiş alışveriş bilgisini gör.</string>
+    <string name="tour_offers_title">Broşürler ve fırsatlar</string>
+    <string name="tour_offers_desc">Aktüel broşürleri incele, ürünü listene ya da fırsat listene ekle.</string>
+    <string name="tour_money_title">Cebin ve Pfand</string>
+    <string name="tour_money_desc">Nakit, banka ve bekleyen Pfand bakiyeni takip et; harcama limitini belirle.</string>
+    <string name="tour_report_title">Kiler ve raporlar</string>
+    <string name="tour_report_desc">Kilerindeki stoğu izle, aylık harcamalarını PDF olarak dışa aktar.</string>
+    <string name="account_title">Hesap ve senkronizasyon</string>
+    <string name="account_signed_out">Hesap yok — veriler yalnızca bu cihazda.</string>
+    <string name="account_google">Google hesabı</string>
+    <string name="account_local">Yerel hesap</string>
+    <string name="account_guest">Hesapsız</string>
+    <string name="account_sync_now">Şimdi senkronize et</string>
+    <string name="account_sync_requires_google">Senkronizasyon için Google hesabıyla giriş yap.</string>
+    <string name="account_sign_out">Çıkış yap</string>
+    <string name="account_sign_in_google">Google ile giriş yap</string>
+    <string name="sync_uploaded">Buluta yedeklendi.</string>
+    <string name="sync_downloaded">Buluttaki yedek geri yüklendi.</string>
+    <string name="sync_first_upload">İlk yedek buluta yüklendi.</string>
+    <string name="sync_failed">Senkronizasyon başarısız: %1$s</string>
+    <string name="settings_currency">Para birimi</string>
+    <string name="settings_account">Hesap ve senkronizasyon</string>
 </resources>

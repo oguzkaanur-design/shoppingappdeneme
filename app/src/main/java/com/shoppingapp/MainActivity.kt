@@ -20,6 +20,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,7 +29,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.shoppingapp.R
 import com.shoppingapp.feature.language.LanguageStore
+import com.shoppingapp.money.CurrencyStore
 import com.shoppingapp.notifications.NotificationHelper
+import com.shoppingapp.onboarding.OnboardingScreen
+import com.shoppingapp.onboarding.OnboardingStore
 import com.shoppingapp.security.AppIntegrity
 import com.shoppingapp.security.AppLock
 import com.shoppingapp.security.AppLockScreen
@@ -64,6 +68,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         ThemeStore.init(this)
+        CurrencyStore.init(this)
         requestedRoute = intent?.getStringExtra(NotificationHelper.EXTRA_ROUTE)
         sharedText = intent?.sharedShoppingText()
         // ViewModel ilk oluşturulduğunda kilidi uygular; döndürme/dil değişiminde
@@ -75,6 +80,9 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             ShoppingAppTheme {
+                // İlk açılış: dil → ülke/para birimi → hesap → tanıtım turu.
+                // Kilit ekranından önce gelir; yoksa ilk kurulumda kilit takılır.
+                var onboardingDone by remember { mutableStateOf(OnboardingStore.isCompleted(this)) }
                 // Yüzey tüm pencereyi kaplar; saydam durum çubuğunun arkasında
                 // tema arka planı görünür, ikon kontrastı Theme'de ayarlanır.
                 Surface(
@@ -83,6 +91,9 @@ class MainActivity : FragmentActivity() {
                 ) {
                     when {
                         tampered -> TamperedBuildScreen()
+                        !onboardingDone -> OnboardingScreen(
+                            onFinished = { onboardingDone = true }
+                        )
                         lockState.locked -> AppLockScreen(
                             errorMessage = lockState.error,
                             biometricEnabled = AppLock.isBiometricEnabled(this@MainActivity) &&

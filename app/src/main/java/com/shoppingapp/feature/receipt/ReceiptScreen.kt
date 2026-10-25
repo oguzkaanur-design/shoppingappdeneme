@@ -59,6 +59,8 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.io.File
 import java.util.Locale
+import com.shoppingapp.money.CurrencyStore
+import com.shoppingapp.money.MoneyFormat
 import com.shoppingapp.R
 
 /**
@@ -165,13 +167,13 @@ fun ReceiptScreen(
                 }
             } else {
                 Text(
-                    stringResource(R.string.p_x_urun_okundu_x, state.lines.size, euro(state.sum)),
+                    stringResource(R.string.p_x_urun_okundu_x, state.lines.size, money(state.sum)),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 state.total?.let { receiptTotal ->
                     Text(
-                        stringResource(R.string.p_fis_toplami_x, euro(receiptTotal)),
+                        stringResource(R.string.p_fis_toplami_x, money(receiptTotal)),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -231,7 +233,7 @@ fun ReceiptScreen(
                                     singleLine = true,
                                     textStyle = MaterialTheme.typography.bodyMedium,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                    prefix = { Text(stringResource(R.string.s_euro)) }
+                                    prefix = { Text(CurrencyStore.symbol()) }
                                 )
                                 IconButton(onClick = { viewModel.removeLine(index) }) {
                                     Icon(Icons.Outlined.DeleteOutline, contentDescription = stringResource(R.string.s_satiri_sil))
@@ -253,7 +255,7 @@ fun ReceiptScreen(
                         modifier = Modifier.weight(1f),
                         enabled = state.lines.isNotEmpty()
                     ) {
-                        Text(stringResource(R.string.p_alisverisi_tamamla_x, euro(state.sum)))
+                        Text(stringResource(R.string.p_alisverisi_tamamla_x, money(state.sum)))
                     }
                 }
             }
@@ -278,7 +280,7 @@ fun ReceiptScreen(
                         R.string.receipt_saved_summary,
                         receipt.itemCount,
                         receipt.storeName,
-                        euro(receipt.total)
+                        money(receipt.total)
                     )
                 )
             },
@@ -296,4 +298,4 @@ private fun formatQty(value: Double): String =
     if (value % 1.0 == 0.0) value.toInt().toString()
     else String.format(Locale.GERMANY, "%.1f", value)
 
-private fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+private fun money(value: Double): String = MoneyFormat.amount(value)

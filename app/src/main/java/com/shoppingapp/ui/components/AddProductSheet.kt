@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.shoppingapp.money.CurrencyStore
 import com.shoppingapp.R
 import com.shoppingapp.data.catalog.BrandCatalog
 import com.shoppingapp.data.catalog.ProduceCatalog
@@ -282,7 +283,7 @@ fun AddProductSheet(
                             .filter { it.isDigit() || it == ',' || it == '.' }
                             .take(MAX_DECIMAL_LENGTH)
                     },
-                    label = { Text(stringResource(R.string.s_fiyat_euro)) },
+                    label = { Text(stringResource(R.string.s_fiyat_euro, CurrencyStore.symbol())) },
                     placeholder = { Text(stringResource(R.string.s_0_00)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
@@ -295,7 +296,7 @@ fun AddProductSheet(
                             .filter { it.isDigit() || it == ',' || it == '.' }
                             .take(MAX_DECIMAL_LENGTH)
                     },
-                    label = { Text(stringResource(R.string.s_pfand_euro)) },
+                    label = { Text(stringResource(R.string.s_pfand_euro, CurrencyStore.symbol())) },
                     placeholder = { Text(stringResource(R.string.s_0_00)) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,

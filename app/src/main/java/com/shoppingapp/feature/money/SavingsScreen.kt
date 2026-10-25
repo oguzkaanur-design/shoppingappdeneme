@@ -73,6 +73,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.shoppingapp.money.CurrencyStore
 import com.shoppingapp.R
 import com.shoppingapp.data.model.MoneyAccount
 import com.shoppingapp.data.model.MoneyEntry
@@ -302,7 +303,7 @@ private fun ModernTotalCard(balances: MoneyBalances) {
                         color = content.copy(alpha = 0.75f)
                     )
                     Text(
-                        euro(balances.total),
+                        money(balances.total),
                         fontSize = 34.sp,
                         lineHeight = 40.sp,
                         fontWeight = FontWeight.Bold,
@@ -313,7 +314,7 @@ private fun ModernTotalCard(balances: MoneyBalances) {
 
             Text(
                 text = if (balances.pfand > 0.0) {
-                    stringResource(R.string.savings_total_pfand, euro(balances.pfand))
+                    stringResource(R.string.savings_total_pfand, money(balances.pfand))
                 } else {
                     stringResource(R.string.savings_total_hint)
                 },
@@ -363,7 +364,7 @@ private fun ClassicTotalCard(balances: MoneyBalances) {
                 )
             }
             Text(
-                euro(balances.total),
+                money(balances.total),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(vertical = 8.dp)
@@ -375,7 +376,7 @@ private fun ClassicTotalCard(balances: MoneyBalances) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
                 text = if (balances.pfand > 0.0) {
-                    stringResource(R.string.savings_total_pfand, euro(balances.pfand))
+                    stringResource(R.string.savings_total_pfand, money(balances.pfand))
                 } else {
                     stringResource(R.string.savings_total_hint)
                 },
@@ -400,7 +401,7 @@ private fun LedgerLine(label: String, value: Double) {
             modifier = Modifier.weight(1f)
         )
         Text(
-            euro(value),
+            money(value),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold
         )
@@ -424,7 +425,7 @@ private fun CompactTotalCard(balances: MoneyBalances) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
                 Text(
-                    euro(balances.total),
+                    money(balances.total),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -442,7 +443,7 @@ private fun CompactTotalCard(balances: MoneyBalances) {
 @Composable
 private fun CompactBreakdown(label: String, value: Double) {
     Text(
-        "$label ${euro(value)}",
+        "$label ${money(value)}",
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
         maxLines = 1
@@ -465,7 +466,7 @@ private fun GalleryTotalCard(balances: MoneyBalances) {
                         color = content.copy(alpha = 0.7f)
                     )
                     Text(
-                        euro(balances.total),
+                        money(balances.total),
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
                         color = content
@@ -483,7 +484,7 @@ private fun GalleryTotalCard(balances: MoneyBalances) {
             }
             Text(
                 text = if (balances.pfand > 0.0) {
-                    stringResource(R.string.savings_total_pfand, euro(balances.pfand))
+                    stringResource(R.string.savings_total_pfand, money(balances.pfand))
                 } else {
                     stringResource(R.string.savings_total_hint)
                 },
@@ -514,7 +515,7 @@ private fun Breakdown(label: String, value: Double, content: Color, modifier: Mo
             color = content.copy(alpha = 0.7f)
         )
         Text(
-            euro(value),
+            money(value),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = content
@@ -606,7 +607,7 @@ private fun ModernAccountCard(
                     color = contentColor.copy(alpha = 0.8f)
                 )
                 Text(
-                    euro(balance),
+                    money(balance),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = contentColor
@@ -687,7 +688,7 @@ private fun ClassicAccountCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    euro(balance),
+                    money(balance),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -756,7 +757,7 @@ private fun CompactAccountCard(
             )
             Spacer(Modifier.weight(1f))
             Text(
-                euro(balance),
+                money(balance),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -813,7 +814,7 @@ private fun GalleryAccountCard(
                 modifier = Modifier.padding(top = 10.dp)
             )
             Text(
-                euro(balance),
+                money(balance),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = contentColor
@@ -918,7 +919,7 @@ private fun ModernPfandCard(total: Double, units: Int, onOpen: () -> Unit) {
                 )
             }
             Text(
-                euro(total),
+                money(total),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -967,7 +968,7 @@ private fun ClassicPfandCard(total: Double, units: Int, onOpen: () -> Unit) {
                 )
             }
             Text(
-                euro(total),
+                money(total),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -1014,7 +1015,7 @@ private fun CompactPfandCard(total: Double, units: Int, onOpen: () -> Unit) {
                 modifier = Modifier.weight(1f).padding(start = 6.dp)
             )
             Text(
-                euro(total),
+                money(total),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -1067,7 +1068,7 @@ private fun GalleryPfandCard(total: Double, units: Int, onOpen: () -> Unit) {
                 )
             }
             Text(
-                euro(total),
+                money(total),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -1144,7 +1145,7 @@ private fun ModernMovementRow(entry: MoneyEntry, onDelete: () -> Unit) {
                 )
             }
             Text(
-                signedEuro(entry.amount),
+                signedMoney(entry.amount),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = tint
@@ -1187,7 +1188,7 @@ private fun ClassicMovementRow(entry: MoneyEntry, onDelete: () -> Unit) {
                 )
             }
             Text(
-                signedEuro(entry.amount),
+                signedMoney(entry.amount),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = tint
@@ -1229,7 +1230,7 @@ private fun CompactMovementRow(entry: MoneyEntry, onDelete: () -> Unit) {
             )
         }
         Text(
-            signedEuro(entry.amount),
+            signedMoney(entry.amount),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = tint
@@ -1276,7 +1277,7 @@ private fun GalleryMovementRow(entry: MoneyEntry, onDelete: () -> Unit) {
                 }
             }
             Text(
-                signedEuro(entry.amount),
+                signedMoney(entry.amount),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = tint
@@ -1327,7 +1328,7 @@ private fun MoneyActionDialog(
         text = {
             Column {
                 Text(
-                    stringResource(R.string.p_su_anki_bakiye_x, euro(currentBalance)),
+                    stringResource(R.string.p_su_anki_bakiye_x, money(currentBalance)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1338,7 +1339,7 @@ private fun MoneyActionDialog(
                             amountText = value
                         }
                     },
-                    label = { Text(stringResource(R.string.s_tutar_euro)) },
+                    label = { Text(stringResource(R.string.s_tutar_euro, CurrencyStore.symbol())) },
                     singleLine = true,
                     isError = amountText.isNotEmpty() && parsed == null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -1357,7 +1358,7 @@ private fun MoneyActionDialog(
                         .padding(top = 8.dp)
                 )
                 Text(
-                    text = stringResource(R.string.p_islemden_sonra_x, euro(after)),
+                    text = stringResource(R.string.p_islemden_sonra_x, money(after)),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (after < 0.0) {

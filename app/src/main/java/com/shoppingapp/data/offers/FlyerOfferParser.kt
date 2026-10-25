@@ -3,6 +3,7 @@ package com.shoppingapp.data.offers
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.shoppingapp.money.MoneyFormat
 import java.time.Instant
 import java.util.Locale
 
@@ -122,8 +123,8 @@ object FlyerOfferParser {
         primitive(name)?.let { runCatching { it.asFloat }.getOrNull() }
 }
 
-/** Fiyatları Alman biçiminde gösterir: 1,19 € */
+/** Fiyatları seçili para biriminin yerel biçiminde gösterir: 1,19 € · 34,90 ₺ */
 object FlyerPriceLabel {
     fun format(price: Double?): String? =
-        price?.let { String.format(Locale.GERMANY, "%.2f €", it) }
+        price?.let { MoneyFormat.amount(it) }
 }

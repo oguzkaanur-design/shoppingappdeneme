@@ -1,5 +1,6 @@
 package com.shoppingapp.feature.reports
 
+import com.shoppingapp.money.MoneyFormat
 import com.shoppingapp.data.model.MoneyAccount
 import com.shoppingapp.data.model.MoneyEntry
 import com.shoppingapp.data.model.PantryRow
@@ -39,12 +40,12 @@ data class ReportLabels(
 
 object ReportRows {
 
-    fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+    fun money(value: Double): String = MoneyFormat.amount(value)
 
-    fun signedEuro(value: Double): String = when {
-        value > 0.0 -> "+" + euro(value)
-        value < 0.0 -> "−" + euro(-value)
-        else -> euro(0.0)
+    fun signedMoney(value: Double): String = when {
+        value > 0.0 -> "+" + money(value)
+        value < 0.0 -> "−" + money(-value)
+        else -> money(0.0)
     }
 
     fun date(epochMs: Long): String =
@@ -58,7 +59,7 @@ object ReportRows {
                     date(entry.createdAt),
                     entry.note.ifBlank { "—" },
                     if (entry.account == MoneyAccount.BANK) labels.bank else labels.cash,
-                    signedEuro(entry.amount)
+                    signedMoney(entry.amount)
                 )
             }
             .ifEmpty { listOf(listOf(labels.empty, "", "", "")) }
@@ -81,8 +82,8 @@ object ReportRows {
                 listOf(
                     entry.label,
                     entry.quantity.toString(),
-                    euro(entry.unitAmount),
-                    euro(entry.unitAmount * entry.quantity),
+                    money(entry.unitAmount),
+                    money(entry.unitAmount * entry.quantity),
                     status
                 )
             }

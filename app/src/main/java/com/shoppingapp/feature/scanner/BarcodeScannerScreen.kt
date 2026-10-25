@@ -80,6 +80,7 @@ import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.shoppingapp.money.MoneyFormat
 import com.shoppingapp.R
 import com.shoppingapp.ui.components.ProductThumb
 import com.google.mlkit.vision.barcode.BarcodeScanning
@@ -342,7 +343,7 @@ fun BarcodeScannerScreen(
                                             Text(
                                                 text = stringResource(
                                                     R.string.scanner_last_price,
-                                                    String.format(Locale.GERMANY, "%.2f", last.priceEuro),
+                                                    MoneyFormat.amount(last.priceEuro),
                                                     last.storeName?.let { " · $it" }.orEmpty(),
                                                     date
                                                 ),

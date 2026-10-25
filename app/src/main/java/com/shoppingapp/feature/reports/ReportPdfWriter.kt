@@ -98,7 +98,7 @@ class ReportPdfWriter(private val context: Context) {
     fun write(document: ReportDocument): File {
         val dir = File(context.cacheDir, "reports").apply { mkdirs() }
         val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.GERMANY).format(Date())
-        val file = File(dir, "baskit-rapor-$stamp.pdf")
+        val file = File(dir, "korb-rapor-$stamp.pdf")
 
         val pdf = PdfDocument()
         var pageNumber = 1
@@ -182,11 +182,11 @@ class ReportPdfWriter(private val context: Context) {
             canvas.drawText(value, PAGE_WIDTH - MARGIN - valuePaint.measureText(value), y + 11f, valuePaint)
             y += 19f
         }
-        summaryRow(document.cashLabel, ReportRows.euro(document.cash))
-        summaryRow(document.bankLabel, ReportRows.euro(document.bank))
-        summaryRow(document.pfandLabel, ReportRows.euro(document.pfand))
+        summaryRow(document.cashLabel, ReportRows.money(document.cash))
+        summaryRow(document.bankLabel, ReportRows.money(document.bank))
+        summaryRow(document.pfandLabel, ReportRows.money(document.pfand))
         canvas.drawLine(MARGIN, y, PAGE_WIDTH - MARGIN, y, linePaint)
-        summaryRow(document.totalLabel, ReportRows.euro(document.cash + document.bank + document.pfand), strong = true)
+        summaryRow(document.totalLabel, ReportRows.money(document.cash + document.bank + document.pfand), strong = true)
         y += 10f
 
         section(document.movementsTitle)

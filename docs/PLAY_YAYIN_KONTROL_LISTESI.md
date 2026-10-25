@@ -1,4 +1,4 @@
-# Play Yayın Kontrol Listesi — Baskit
+# Play Yayın Kontrol Listesi — Korb
 
 Bu liste, imzalı AAB'yi Play Console'a yüklemek için gereken adımları ve
 otomatik kapıları tek yerde toplar. Kod tarafı hazır; aşağıdaki dış hesaplar
@@ -51,7 +51,16 @@ Artefaktlar:
       ekran görüntüleri (`screenshots/`), 512×512 ikon (`store/play-icon-512.png`)
       ve öne çıkan grafik (`store/feature-graphic-1024x500.png`). Metinler:
       `store/PLAY_LISTING.md`.
-- [ ] **Hesap gereksinimi**: hesap yok; "uygulama içi hesap gerekmiyor" seçildi.
+- [ ] **Hesap gereksinimi**: uygulama hesapsız çalışır; Google ile giriş **isteğe bağlı**.
+  Google girişi açılacaksa Play Console → App content → "Account deletion" ve
+  Data Safety formunda hesap verisi (e-posta, görünen ad) ve Drive senkronizasyonu
+  beyan edilmelidir. Giriş yapılandırılmadıysa düğme "yapılandırılmadı" durumunda kalır.
+- [ ] **Google ile giriş (opsiyonel)**: Google Cloud'da Web OAuth istemcisi +
+  Android istemcisi (paket `com.shoppingapp`, yükleme ve Play App Signing SHA-1),
+  onay ekranında `drive.appdata` kapsamı. Kimlik yalnızca `googleWebClientId`
+  özelliğiyle verilir; APK/AAB içine gömülü gizli anahtar yoktur.
+- [ ] **Para birimi/ülke**: onboarding ülke seçimi para birimini belirler; mağaza
+  metinlerinde 11 dil ve çoklu para birimi desteği belirtildi.
 - [ ] **Reklamlar**: uygulamada reklam yok.
 - [ ] **İzin beyanları**: kamera (barkod/fiş), bildirim (hatırlatıcı).
 - [ ] **Premium lisans anahtarı** (`license/baskit-license-private.pem`) yalnızca

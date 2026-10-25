@@ -36,9 +36,18 @@ android {
         // Her yeni sürümde versionCode'u ARTIR (telefon "güncelleme" olarak algılar, veriler kalır).
         // CI / telefondan tetiklenen derlemelerde kod düzenlemeden üzerine yazılabilir:
         //   ./gradlew :app:assembleRelease -PversionCode=6 -PversionName=1.5
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 15
-        versionName = (findProperty("versionName") as String?) ?: "2.4"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 16
+        versionName = (findProperty("versionName") as String?) ?: "3.0"
+        testInstrumentationRunner = "com.shoppingapp.testing.KorbTestRunner"
+
+        // Google ile giriş, Google Cloud'da oluşturulan **Web** OAuth istemcisinin
+        // kimliğine ihtiyaç duyar. Kimlik yoksa giriş düğmesi "yapılandırılmadı"
+        // durumunda kalır; uygulamanın geri kalanı etkilenmez.
+        //   local.properties ya da gradle.properties: googleWebClientId=...apps.googleusercontent.com
+        val googleClientId = (findProperty("googleWebClientId") as String?)
+            ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+            ?: ""
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleClientId\"")
     }
 
     sourceSets {
@@ -154,6 +163,12 @@ dependencies {
 
     // Coil Image Loading
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Hesap: Credential Manager ile Google girişi, play-services-auth ile Drive izni
+    implementation("androidx.credentials:credentials:1.5.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.5.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation("com.google.android.gms:play-services-auth:21.4.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

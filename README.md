@@ -1,8 +1,9 @@
-# Baskit
+# Korb
 
 Kişisel market, kiler ve bütçe uygulaması. Çevrimdışı öncelikli; veriler
 Room/SQLite'ta cihazda tutulur. Kotlin + Jetpack Compose + Hilt.
 
+- **İlk açılış akışı:** dil → ülke/para birimi → hesap → interaktif tanıtım turu
 - Alışveriş listesi, market modu, barkod ve fiş tarama
 - Kiler (stok, kritik eşik, son kullanma), Pfand iadesi
 - Cebim: nakit/banka hareketleri, bütçe, istatistikler
@@ -10,6 +11,40 @@ Room/SQLite'ta cihazda tutulur. Kotlin + Jetpack Compose + Hilt.
 - **Rapor ekranı:** hareket, Pfand ve kiler tabloları + çevrimdışı **PDF** dışa aktarma
 - 5 renk paleti × 4 arayüz stili (Modern, Klasik, Kompakt, Vitrin)
 - 11 dil, isteğe bağlı PIN/biyometrik uygulama kilidi
+
+## Para birimi
+
+Onboarding'de seçilen ülke para birimini belirler (Almanya → €, Türkiye → ₺,
+İngiltere → £ …); ayarlardan değiştirilebilir. Tüm tutarlar `money/MoneyFormat`
+(`money/Currency.kt`) üzerinden biçimlendirilir: `1.234,56 €`, `34,90 ₺`, `$1,234.56`.
+Giriş alanları hem `12,50` hem `12.50` yazımını kabul eder.
+
+## Hesaplar ve senkronizasyon
+
+Uygulama hesapsız tam çalışır. İsteğe bağlı iki hesap türü var:
+
+- **Google ile giriş:** yedekler kullanıcının kendi Google Drive'ındaki
+  `appDataFolder` (uygulamaya özel gizli klasör) içinde tutulur. Sunucu yoktur;
+  senkronizasyon `sync/SyncManager` içinde "daha yeni `createdAt` kazanır"
+  kuralıyla yapılır. Gerekli izin: `drive.appdata`.
+- **Yerel hesap:** e-posta + şifre yalnızca cihazda; şifre PBKDF2-SHA256
+  (120 000 tur) ile özetlenir, kendisi saklanmaz.
+
+Google girişini açmak için Google Cloud'da bir **Web** OAuth istemcisi oluşturup
+kimliğini verin (ANAHTAR REPOYA GİRMEZ):
+
+```properties
+# local.properties veya gradle.properties
+googleWebClientId=1234567890-abc.apps.googleusercontent.com
+```
+
+İstemci kimliği boşsa giriş düğmesi "yapılandırılmadı" durumunda kalır; uygulama
+hesapsız çalışmaya devam eder. Android istemci kimliği (paket + imza SHA-1) ve
+OAuth onay ekranında `drive.appdata` kapsamı da tanımlanmalıdır.
+
+GitHub Actions'ta üretilen APK'lar için aynı değer depo **variable**'ı olarak durur
+(Secrets değil; değer APK içinde zaten görünür):
+`Settings → Secrets and variables → Actions → Variables → GOOGLE_WEB_CLIENT_ID`.
 
 ## Güvenlik
 

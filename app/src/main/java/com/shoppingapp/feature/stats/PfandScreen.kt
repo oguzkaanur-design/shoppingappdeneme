@@ -69,6 +69,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.shoppingapp.money.CurrencyStore
+import com.shoppingapp.money.MoneyFormat
 import com.shoppingapp.R
 import com.shoppingapp.data.model.PfandEntry
 import com.shoppingapp.data.pfand.PfandPlanError
@@ -205,7 +207,7 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.p_iade_gecmisi_x, euro(state.returnedTotal)),
+                            text = stringResource(R.string.p_iade_gecmisi_x, money(state.returnedTotal)),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)
@@ -232,7 +234,7 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                         R.string.pfand_reset_extra,
                         stringResource(
                             R.string.p_bekleyen_x_ve_iade_edilmis_tum_pfand_kay,
-                            euro(state.pendingTotal)
+                            money(state.pendingTotal)
                         )
                     )
                 )
@@ -265,7 +267,7 @@ fun PfandScreen(viewModel: PfandViewModel = hiltViewModel()) {
                             if (result.success) {
                                 context.getString(
                                     R.string.pfand_return_done,
-                                    euro(result.amountCents / 100.0),
+                                    money(result.amountCents / 100.0),
                                     result.returnedUnits
                                 )
                             } else {
@@ -325,7 +327,7 @@ internal fun ReturnPfandDialog(
                         .testTag(PfandScreenTestTags.RETURN_AMOUNT),
                     label = { Text(stringResource(R.string.pfand_return_amount_label)) },
                     placeholder = { Text(stringResource(R.string.pfand_return_amount_placeholder)) },
-                    prefix = { Text("€") },
+                    prefix = { Text(CurrencyStore.symbol()) },
                     singleLine = true,
                     isError = invalidInput || planError != null,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -333,7 +335,7 @@ internal fun ReturnPfandDialog(
                         Text(
                             stringResource(
                                 R.string.pfand_return_pending,
-                                euro(pendingTotal),
+                                money(pendingTotal),
                                 pendingUnits
                             )
                         )
@@ -403,7 +405,7 @@ private fun ReturnPlanSummary(plan: PfandReturnPlan) {
                 text = stringResource(
                     R.string.pfand_return_calc,
                     plan.returnedUnits,
-                    euro(plan.amountCents / 100.0)
+                    money(plan.amountCents / 100.0)
                 ),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
@@ -418,7 +420,7 @@ private fun ReturnPlanSummary(plan: PfandReturnPlan) {
                             R.string.pfand_return_line,
                             key.first,
                             lines.sumOf { it.quantity },
-                            euro(key.second / 100.0)
+                            money(key.second / 100.0)
                         ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -428,7 +430,7 @@ private fun ReturnPlanSummary(plan: PfandReturnPlan) {
                 text = stringResource(
                     R.string.pfand_return_remaining,
                     plan.remainingUnits,
-                    euro(plan.remainingCents / 100.0)
+                    money(plan.remainingCents / 100.0)
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -496,7 +498,7 @@ private fun TotalCard(total: Double, units: Int, hasEntries: Boolean, onReturn: 
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f)
                     )
                     Text(
-                        euro(total),
+                        money(total),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -529,7 +531,7 @@ private fun TotalCard(total: Double, units: Int, hasEntries: Boolean, onReturn: 
                     Text(stringResource(R.string.s_iadeyi_al))
                 }
                 Text(
-                    text = stringResource(R.string.p_iade_tamamlaninca_x_cebim_deki_nakit_bak, euro(total)),
+                    text = stringResource(R.string.p_iade_tamamlaninca_x_cebim_deki_nakit_bak, money(total)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
                     modifier = Modifier.padding(top = 8.dp)
@@ -597,7 +599,7 @@ private fun AddCard(
                     onValueChange = { value ->
                         onUnitPriceChange(value.filter { it.isDigit() || it == ',' || it == '.' })
                     },
-                    label = { Text(stringResource(R.string.s_birim_fiyat_euro)) },
+                    label = { Text(stringResource(R.string.s_birim_fiyat_euro, CurrencyStore.symbol())) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f)
@@ -617,7 +619,7 @@ private fun AddCard(
             }
 
             Text(
-                text = stringResource(R.string.p_toplam_x, euro((unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0) * (PfandQuantity.parse(quantityText) ?: 0))),
+                text = stringResource(R.string.p_toplam_x, money((unitPrice.replace(',', '.').toDoubleOrNull() ?: 0.0) * (PfandQuantity.parse(quantityText) ?: 0))),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
@@ -662,13 +664,13 @@ private fun PfandRow(entry: PfandEntry, onDelete: () -> Unit) {
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                 Text(entry.label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 Text(
-                    stringResource(R.string.p_x_x_5, entry.quantity, euro(entry.unitAmount)),
+                    stringResource(R.string.p_x_x_5, entry.quantity, money(entry.unitAmount)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
-                euro(entry.unitAmount * entry.quantity),
+                money(entry.unitAmount * entry.quantity),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -699,7 +701,7 @@ private fun ReturnedRow(entry: PfandEntry) {
             modifier = Modifier.size(18.dp)
         )
         Text(
-            text = stringResource(R.string.p_x_x_x, entry.label, entry.quantity, euro(entry.unitAmount)),
+            text = stringResource(R.string.p_x_x_x, entry.label, entry.quantity, money(entry.unitAmount)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
@@ -707,7 +709,7 @@ private fun ReturnedRow(entry: PfandEntry) {
                 .padding(start = 10.dp)
         )
         Text(
-            euro(entry.unitAmount * entry.quantity),
+            money(entry.unitAmount * entry.quantity),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -740,6 +742,6 @@ private fun iconFor(label: String): ImageVector = when {
     else -> Icons.Default.Inventory2
 }
 
-private fun euro(value: Double): String = String.format(Locale.GERMANY, "€%.2f", value)
+private fun money(value: Double): String = MoneyFormat.amount(value)
 
 private fun amount(value: Double): String = String.format(Locale.GERMANY, "%.2f", value)
