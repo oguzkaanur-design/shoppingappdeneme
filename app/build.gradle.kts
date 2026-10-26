@@ -120,31 +120,31 @@ kotlin {
 
 dependencies {
     // Jetpack Compose — sürümler BOM'dan; derleyici Kotlin 2.x Compose eklentisinden.
-    implementation(platform("androidx.compose:compose-bom:2025.09.01"))
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    implementation("androidx.core:core-ktx:1.19.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.3")
     implementation("androidx.activity:activity-compose:1.11.0")
-    implementation("androidx.fragment:fragment:1.8.9")
+    implementation("androidx.fragment:fragment:1.9.1")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.navigation:navigation-compose:2.9.3")
-    implementation("androidx.datastore:datastore-preferences:1.1.7")
+    implementation("androidx.navigation:navigation-compose:2.10.2")
+    implementation("androidx.datastore:datastore-preferences:1.3.0")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.57.2")
     kapt("com.google.dagger:hilt-compiler:2.57.2")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.4.0")
 
     // WorkManager (hatırlatıcı bildirimleri)
-    implementation("androidx.work:work-runtime-ktx:2.10.2")
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.7.2")
-    implementation("androidx.room:room-ktx:2.7.2")
-    kapt("androidx.room:room-compiler:2.7.2")
+    implementation("androidx.room:room-runtime:2.8.5")
+    implementation("androidx.room:room-ktx:2.8.5")
+    kapt("androidx.room:room-compiler:2.8.5")
 
     // CameraX + ML Kit
     implementation("androidx.camera:camera-core:1.4.2")
@@ -173,11 +173,11 @@ dependencies {
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.09.01"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    androidTestImplementation("androidx.room:room-testing:2.7.2")
+    androidTestImplementation("androidx.room:room-testing:2.8.5")
 }
